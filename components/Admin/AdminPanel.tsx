@@ -41,8 +41,8 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         baseData.maxOvers = 20;
     } else {
         baseData.format = '4 Quarters';
-        baseData.period = 'Q1';
-        baseData.periodIdx = 0;
+        baseData.period = 'Warmup';
+        baseData.periodIdx = -1;
     }
 
     await MatchesService.create(baseData);

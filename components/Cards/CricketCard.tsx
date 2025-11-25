@@ -208,7 +208,7 @@ export const CricketCard = ({ match }: { match: Match }) => {
                                         )}
                                         {e.duckType === 'regular' && (
                                             <>
-                                                <span className="ml-2 bg-penrice-gold text-black text-[9px] px-1.5 py-0.5 border border-black">
+                                                <span className="ml-2 bg-black text-white text-[9px] px-1.5 py-0.5 border border-black">
                                                     QUACK
                                                 </span>
                                                 <span className="text-sm animate-duck-slide inline-block origin-bottom-left ml-1">🦆</span>
