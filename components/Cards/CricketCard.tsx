@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Match, PlayerStats, GameEvent } from '../../types';
 import { Badge } from '../Shared';
 import { Marquee } from '../Layout/Marquee';
@@ -83,7 +84,13 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
       
       const lastEvent = match.events?.[match.events.length - 1];
 
-      return (
+      // Logic for Status (Chasing / Target)
+      const isSecondInnings = (match.events || []).some(e => e.type === 'INNINGS BREAK');
+      const target = (bowlingScore || 0) + 1;
+      const runsNeeded = target - (score || 0);
+
+      // We use a Portal to attach this directly to the body, avoiding z-index/transform issues from parent containers
+      return createPortal(
           <div className="fixed inset-0 z-[9999] bg-gray-900 text-white flex flex-col font-sans overflow-hidden h-screen w-screen">
              {/* Celebration Overlay */}
              {celebration && (
@@ -128,7 +135,17 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
                                      Ov {match.currentOver?.toFixed(1)} <span className="text-2xl text-gray-700">/ {match.maxOvers || 20}</span>
                                  </div>
                                  <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-sm border-l-4 border-gray-600">
-                                     vs {bowlingTeamName} <span className="text-white ml-2">{bowlingScore}-{bowlingWickets}</span>
+                                     {isSecondInnings ? (
+                                         <>
+                                            <span className="text-gray-500 mr-2">Target {target} •</span>
+                                            <span className="text-white">Need {Math.max(0, runsNeeded)} to win</span>
+                                         </>
+                                     ) : (
+                                         <>
+                                            <span className="text-gray-500 mr-2">1st Innings •</span>
+                                            <span className="text-white">Setting Target</span>
+                                         </>
+                                     )}
                                  </div>
                              </div>
                          </div>
@@ -220,7 +237,8 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
                      </div>
                  )}
              </div>
-          </div>
+          </div>,
+          document.body // Portal Target
       );
   };
 
