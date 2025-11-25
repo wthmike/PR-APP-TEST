@@ -75,7 +75,9 @@ export default function App() {
 
             <div className="max-w-md w-full bg-white p-8 md:p-12 card-shadow-hard border-2 border-black z-10 opacity-0 animate-pop-in">
                 <div className="flex justify-center mb-8 opacity-0 animate-fade-in-down delay-200">
-                    <img src="/pr-logo.png" alt="Penrice Logo" className="h-24 w-auto object-contain" />
+                    <div className="bg-white p-2 rounded-lg">
+                        <img src="/pr-logo.png" alt="Penrice Logo" className="h-24 w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                    </div>
                 </div>
                 <div className="opacity-0 animate-fade-in-up delay-300">
                     <h1 className="text-3xl font-display font-bold text-center uppercase mb-2 leading-none">Penrice<br/>Match Centre</h1>
@@ -110,7 +112,7 @@ export default function App() {
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 font-sans">
              <div className="max-w-xl w-full">
                  <div className="text-center mb-10 opacity-0 animate-fade-in-down">
-                     <img src="/pr-logo.png" alt="Penrice Logo" className="h-20 w-auto mx-auto mb-6 object-contain" />
+                     <img src="/pr-logo.png" alt="Penrice Logo" className="h-20 w-auto mx-auto mb-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
                      <span className="text-[10px] font-bold text-penrice-gold uppercase tracking-[0.3em] bg-black px-3 py-1 mb-4 inline-block">Official Hub</span>
                      <h2 className="text-5xl md:text-6xl font-display font-bold uppercase mb-2 tracking-tighter text-black leading-[0.9]">Welcome<br/>to Match Centre</h2>
                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Live Scores & Real-Time Updates</p>

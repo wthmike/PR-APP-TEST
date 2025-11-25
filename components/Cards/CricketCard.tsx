@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { Match, PlayerStats } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Match, PlayerStats, GameEvent } from '../../types';
 import { Badge } from '../Shared';
 
 export const CricketCard = ({ match }: { match: Match }) => {
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home');
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [celebration, setCelebration] = useState<{type: string, text: string} | null>(null);
   
+  // Refs for tracking new events for animation
+  const lastEventCountRef = useRef(match.events?.length || 0);
+
   const isLive = match.status === 'LIVE';
   const isResult = match.status === 'FT' || match.status === 'RESULT';
   const isPenriceBatting = match.penriceStatus === 'batting';
@@ -27,6 +32,171 @@ export const CricketCard = ({ match }: { match: Match }) => {
   
   const bowlerOvers = bowlerP ? `${Math.floor((bowlerP.bowlBalls || 0) / 6)}.${(bowlerP.bowlBalls || 0) % 6}` : '0.0';
   const bowlerFigures = bowlerP ? `${bowlerP.bowlWkts || 0}-${bowlerP.bowlRuns || 0} (${bowlerOvers})` : '';
+
+  // Effect to trigger celebration
+  useEffect(() => {
+      if (!match.events) return;
+      
+      if (match.events.length > lastEventCountRef.current) {
+          const latestEvent = match.events[match.events.length - 1];
+          const type = latestEvent.type;
+          
+          if (['4', '6', 'WICKET', 'HOWZAT!'].includes(type) || latestEvent.duckType) {
+              let text = type;
+              if (type === '4') text = "BOUNDARY!";
+              if (type === '6') text = "MAXIMUM!";
+              if (type === 'WICKET' || type === 'HOWZAT!') text = "WICKET!";
+              if (latestEvent.duckType) text = "DUCK!";
+              
+              setCelebration({ type, text });
+              
+              // Clear after 5 seconds
+              const timer = setTimeout(() => {
+                  setCelebration(null);
+              }, 5000);
+              return () => clearTimeout(timer);
+          }
+      }
+      lastEventCountRef.current = match.events.length;
+  }, [match.events]);
+
+  // Effect to handle Escape key
+  useEffect(() => {
+      const handleEsc = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') setPresentationMode(false);
+      };
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
+  // Presentation Mode Component
+  const PresentationOverlay = () => {
+      const battingStats = isPenriceBatting ? match.homeTeamStats : match.awayTeamStats;
+      const teamName = isPenriceBatting ? match.teamName : match.opponent;
+      const score = isPenriceBatting ? match.homeScore : match.awayScore;
+      const wickets = isPenriceBatting ? match.homeWickets : match.awayWickets;
+      
+      const lastEvent = match.events?.[match.events.length - 1];
+
+      return (
+          <div className="fixed inset-0 z-[100] bg-gray-900 text-white flex flex-col font-sans overflow-hidden">
+             {/* Celebration Overlay */}
+             {celebration && (
+                 <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                     <div className="text-center animate-pop-in">
+                         <div className={`text-[15vw] font-display font-bold leading-none ${celebration.type === 'WICKET' || celebration.type === 'HOWZAT!' || celebration.text === 'DUCK!' ? 'text-red-600' : 'text-penrice-gold'} drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]`}>
+                             {celebration.text}
+                         </div>
+                         {celebration.type === '4' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Four Runs</div>}
+                         {celebration.type === '6' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Six Runs</div>}
+                         {(celebration.type === 'WICKET' || celebration.type === 'HOWZAT!') && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Batter Dismissed</div>}
+                     </div>
+                 </div>
+             )}
+
+             {/* Header */}
+             <div className="h-16 bg-black border-b border-gray-800 flex justify-between items-center px-8">
+                 <div className="flex items-center gap-4">
+                     <span className="text-penrice-gold font-display font-bold text-2xl uppercase tracking-wider">Penrice Match Centre</span>
+                     <div className="h-6 w-px bg-gray-700"></div>
+                     <span className="text-gray-400 font-bold uppercase tracking-widest text-sm">{match.yearGroup} • {match.league}</span>
+                 </div>
+                 <button onClick={() => setPresentationMode(false)} className="text-gray-400 hover:text-white uppercase font-bold text-xs tracking-widest border border-gray-700 px-4 py-2 hover:bg-gray-800 rounded-sm transition-colors">
+                     Exit Fullscreen (ESC)
+                 </button>
+             </div>
+
+             {/* Main Content */}
+             <div className="flex-1 flex overflow-hidden">
+                 {/* LEFT: Big Score & Current Play */}
+                 <div className="w-2/3 p-12 flex flex-col justify-center border-r border-gray-800 relative bg-gradient-to-br from-gray-900 to-black">
+                     <div className="absolute top-8 left-8 text-penrice-gold font-bold uppercase tracking-[0.2em] text-lg">Batting Now</div>
+                     
+                     <div className="mb-12">
+                         <h1 className="font-display font-bold text-6xl uppercase mb-2 text-white tracking-tight">{teamName}</h1>
+                         <div className="flex items-baseline gap-8">
+                             <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter">
+                                 {score}<span className="text-gray-600">/</span>{wickets}
+                             </div>
+                             <div className="text-4xl font-bold text-gray-500 uppercase tracking-widest">
+                                 Ov {match.currentOver?.toFixed(1)} <span className="text-2xl text-gray-700">/ {match.maxOvers}</span>
+                             </div>
+                         </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-12">
+                         {/* Striker */}
+                         <div className="bg-gray-800/50 p-6 border-l-4 border-penrice-gold backdrop-blur-sm">
+                             <div className="text-gray-400 font-bold uppercase tracking-widest text-sm mb-2">Striker</div>
+                             <div className="text-4xl font-display font-bold text-white mb-1 truncate">{match.currentStriker || '-'}</div>
+                             <div className="text-3xl font-mono text-penrice-gold">
+                                 {strikerP?.runs || 0} <span className="text-xl text-gray-500">({strikerP?.balls || 0})</span>
+                             </div>
+                         </div>
+                         
+                         {/* Non-Striker */}
+                         <div className="bg-gray-800/30 p-6 border-l-4 border-gray-600">
+                             <div className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-2">Non-Striker</div>
+                             <div className="text-4xl font-display font-bold text-gray-300 mb-1 truncate">{match.currentNonStriker || '-'}</div>
+                             <div className="text-3xl font-mono text-gray-400">
+                                 {nonStrikerP?.runs || 0} <span className="text-xl text-gray-600">({nonStrikerP?.balls || 0})</span>
+                             </div>
+                         </div>
+                     </div>
+
+                     {/* Current Bowler */}
+                     <div className="mt-12 flex items-center gap-6 text-gray-400">
+                         <div className="text-sm font-bold uppercase tracking-widest">Current Bowler</div>
+                         <div className="h-px bg-gray-700 flex-1"></div>
+                         <div className="text-2xl font-display font-bold text-white uppercase">{match.currentBowler || '-'}</div>
+                         <div className="font-mono text-xl text-penrice-gold">{bowlerFigures}</div>
+                     </div>
+                 </div>
+
+                 {/* RIGHT: Scorecard */}
+                 <div className="w-1/3 bg-gray-900 flex flex-col border-l border-gray-800">
+                     <div className="p-6 bg-black border-b border-gray-800">
+                         <h3 className="text-white font-display font-bold text-xl uppercase tracking-wider">Scorecard</h3>
+                     </div>
+                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                         {battingStats?.map((p, i) => (
+                             <div key={i} className={`flex justify-between items-center pb-3 border-b border-gray-800 ${p.status === 'batting' ? 'opacity-100' : 'opacity-60'}`}>
+                                 <div>
+                                     <div className={`font-bold text-lg ${p.status === 'batting' ? 'text-penrice-gold' : (p.status === 'out' ? 'text-red-500 line-through decoration-red-900/50' : 'text-white')}`}>
+                                         {p.name} {p.status === 'batting' && '*'}
+                                     </div>
+                                     <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{p.dismissal || (p.status === 'batting' ? 'Batting' : (p.status === 'not out' ? 'Not Out' : 'Yet to Bat'))}</div>
+                                 </div>
+                                 <div className={`font-mono text-xl ${p.status === 'waiting' ? 'text-gray-700' : 'text-white'}`}>
+                                     {p.runs} <span className="text-sm text-gray-600">({p.balls})</span>
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+             </div>
+
+             {/* Footer: Commentary */}
+             <div className="h-24 bg-penrice-navy border-t-4 border-penrice-gold flex items-center px-8 relative overflow-hidden">
+                 <div className="absolute left-0 top-0 bottom-0 w-24 bg-penrice-gold flex items-center justify-center text-black font-bold text-2xl z-10">
+                     <i className="fa-solid fa-microphone-lines"></i>
+                 </div>
+                 <div className="pl-24 w-full">
+                     {lastEvent ? (
+                         <div className="flex items-center gap-6 animate-fade-in-up">
+                             <span className="font-mono text-penrice-gold font-bold text-2xl">{lastEvent.time}</span>
+                             <div className="text-white text-2xl font-bold uppercase truncate">
+                                 {lastEvent.desc}
+                             </div>
+                         </div>
+                     ) : (
+                         <span className="text-gray-400 font-bold uppercase tracking-widest text-lg ml-8">Awaiting start of play...</span>
+                     )}
+                 </div>
+             </div>
+          </div>
+      );
+  };
 
   // Scorecard Row Component
   const ScorecardTable = ({ stats, striker }: { stats: PlayerStats[] | undefined, striker?: string }) => {
@@ -75,6 +245,8 @@ export const CricketCard = ({ match }: { match: Match }) => {
   };
 
   return (
+    <>
+    {presentationMode && <PresentationOverlay />}
     <div className={`w-full bg-white border border-gray-200 transition-all duration-300 relative z-10 ${expanded ? 'border-black card-shadow-hover z-50' : 'hover:border-black hover:card-shadow-hover'}`}>
       {/* Header */}
       <div className="grid grid-cols-2 cursor-pointer border-b border-gray-100" onClick={() => setExpanded(!expanded)}>
@@ -89,9 +261,20 @@ export const CricketCard = ({ match }: { match: Match }) => {
               {match.maxOvers ? <span className="text-gray-400"> • {match.maxOvers} Overs</span> : ''}
             </div>
         </div>
-        <div className="p-3 flex flex-col justify-center items-end bg-gray-50/50">
-           {isLive && <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Overs</div>}
-           <div className="font-display font-bold text-xl text-black leading-none">{match.currentOver?.toFixed(1) || '0.0'}</div>
+        <div className="p-3 flex items-center justify-end gap-4 bg-gray-50/50">
+           <div className="flex flex-col items-end">
+               {isLive && <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Overs</div>}
+               <div className="font-display font-bold text-xl text-black leading-none">{match.currentOver?.toFixed(1) || '0.0'}</div>
+           </div>
+           
+           {/* Expand / Presentation Button */}
+           <button 
+                onClick={(e) => { e.stopPropagation(); setPresentationMode(true); }}
+                className="w-8 h-8 rounded-full hover:bg-black hover:text-white flex items-center justify-center transition-colors text-gray-400 border border-gray-200"
+                title="Presentation Mode"
+           >
+               <i className="fa-solid fa-expand text-xs"></i>
+           </button>
         </div>
       </div>
 
@@ -243,5 +426,6 @@ export const CricketCard = ({ match }: { match: Match }) => {
         <i className={`fa-solid fa-chevron-down text-[10px] text-gray-300 transition-transform ${expanded ? 'rotate-180' : ''}`}></i>
       </div>
     </div>
+    </>
   );
 };
