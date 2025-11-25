@@ -4,6 +4,197 @@ import { Match, PlayerStats, GameEvent } from '../../types';
 import { Badge } from '../Shared';
 import { Marquee } from '../Layout/Marquee';
 
+// --- Presentation Overlay Component ---
+// Defined outside to prevent re-mounting/animation loops on parent re-renders
+const CricketPresentationOverlay = ({ 
+  match, 
+  allMatches, 
+  celebration, 
+  onClose 
+}: { 
+  match: Match, 
+  allMatches?: Match[], 
+  celebration: {type: string, text: string} | null,
+  onClose: () => void 
+}) => {
+    const isPenriceBatting = match.penriceStatus === 'batting';
+    const battingStats = isPenriceBatting ? match.homeTeamStats : match.awayTeamStats;
+    const teamName = isPenriceBatting ? match.teamName : match.opponent;
+    const score = isPenriceBatting ? match.homeScore : match.awayScore;
+    const wickets = isPenriceBatting ? match.homeWickets : match.awayWickets;
+
+    const bowlingTeamName = isPenriceBatting ? match.opponent : match.teamName;
+    const bowlingScore = isPenriceBatting ? match.awayScore : match.homeScore;
+    const bowlingWickets = isPenriceBatting ? match.awayWickets : match.homeWickets;
+    
+    const bowlingTeamStats = isPenriceBatting ? match.awayTeamStats : match.homeTeamStats;
+    
+    const lastEvent = match.events?.[match.events.length - 1];
+    
+    const strikerP = battingStats?.find(p => p.name === match.currentStriker);
+    const nonStrikerP = battingStats?.find(p => p.name === match.currentNonStriker);
+    const bowlerP = bowlingTeamStats?.find(p => p.name === match.currentBowler);
+    const bowlerOvers = bowlerP ? `${Math.floor((bowlerP.bowlBalls || 0) / 6)}.${(bowlerP.bowlBalls || 0) % 6}` : '0.0';
+    const bowlerFigures = bowlerP ? `${bowlerP.bowlWkts || 0}-${bowlerP.bowlRuns || 0} (${bowlerOvers})` : '';
+
+    // Logic for Status (Chasing / Target)
+    const isSecondInnings = (match.events || []).some(e => e.type === 'INNINGS BREAK');
+    const target = (bowlingScore || 0) + 1;
+    const runsNeeded = target - (score || 0);
+
+    return (
+        <div className="fixed inset-0 z-[9999] bg-gray-900 text-white flex flex-col font-sans overflow-hidden h-screen w-screen">
+            {/* Celebration Overlay */}
+            {celebration && (
+                <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="text-center animate-pop-in">
+                        <div className={`text-[15vw] font-display font-bold leading-none ${celebration.type === 'WICKET' || celebration.type === 'HOWZAT!' || celebration.text === 'DUCK!' ? 'text-red-600' : 'text-penrice-gold'} drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]`}>
+                            {celebration.text}
+                        </div>
+                        {celebration.type === '4' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Four Runs</div>}
+                        {celebration.type === '6' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Six Runs</div>}
+                        {(celebration.type === 'WICKET' || celebration.type === 'HOWZAT!') && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Batter Dismissed</div>}
+                    </div>
+                </div>
+            )}
+
+            {/* Header */}
+            <div className="h-16 bg-black border-b border-gray-800 flex justify-between items-center px-8 shrink-0">
+                <div className="flex items-center gap-4">
+                    <span className="text-penrice-gold font-display font-bold text-2xl uppercase tracking-wider">Penrice Match Centre</span>
+                    <div className="h-6 w-px bg-gray-700"></div>
+                    <span className="text-gray-400 font-bold uppercase tracking-widest text-sm">{match.yearGroup} • {match.league}</span>
+                </div>
+                <button onClick={onClose} className="text-gray-400 hover:text-white uppercase font-bold text-xs tracking-widest border border-gray-700 px-4 py-2 hover:bg-gray-800 rounded-sm transition-colors">
+                    Exit Fullscreen (ESC)
+                </button>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex overflow-hidden pb-12">
+                {/* LEFT: Big Score & Current Play */}
+                <div className="w-2/3 p-12 flex flex-col justify-center border-r border-gray-800 relative bg-gradient-to-br from-gray-900 to-black">
+                    <div className="absolute top-8 left-8 text-penrice-gold font-bold uppercase tracking-[0.2em] text-lg">Batting Now</div>
+                    
+                    <div className="mb-12">
+                        <h1 className="font-display font-bold text-6xl uppercase mb-2 text-white tracking-tight">{teamName}</h1>
+                        <div className="flex items-start gap-12">
+                            <div className="flex flex-col">
+                               <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter mb-4">
+                                   {score}<span className="text-gray-600">/</span>{wickets}
+                               </div>
+                               <div className="flex items-center gap-4 pl-2">
+                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Bowler</div>
+                                    <div className="h-4 w-px bg-gray-700"></div>
+                                    <div className="text-2xl font-display font-bold text-white uppercase">{match.currentBowler || '-'}</div>
+                                    <div className="font-mono text-2xl text-penrice-gold">{bowlerFigures}</div>
+                               </div>
+                            </div>
+                            
+                            <div className="flex flex-col items-start gap-6 pt-8">
+                                <div className="text-5xl font-bold text-gray-500 uppercase tracking-widest">
+                                    Ov {match.currentOver?.toFixed(1)} <span className="text-3xl text-gray-700">/ {match.maxOvers || 20}</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-6 py-4 rounded-sm border-l-4 border-gray-600">
+                                    {isSecondInnings ? (
+                                        <>
+                                           <span className="text-gray-500 mr-2">Target {target} •</span>
+                                           <span className="text-white">Need {Math.max(0, runsNeeded)} to win</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                           <span className="text-gray-500 mr-2">1st Innings •</span>
+                                           <span className="text-white">Setting Target</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-12">
+                        {/* Striker */}
+                        <div className="bg-gray-800/50 p-6 border-l-4 border-penrice-gold backdrop-blur-sm">
+                            <div className="text-gray-400 font-bold uppercase tracking-widest text-sm mb-2">Striker</div>
+                            <div className="text-4xl font-display font-bold text-white mb-1 truncate">{match.currentStriker || '-'}</div>
+                            <div className="text-3xl font-mono text-penrice-gold">
+                                {strikerP?.runs || 0} <span className="text-xl text-gray-500">({strikerP?.balls || 0})</span>
+                            </div>
+                        </div>
+                        
+                        {/* Non-Striker */}
+                        <div className="bg-gray-800/30 p-6 border-l-4 border-gray-600">
+                            <div className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-2">Non-Striker</div>
+                            <div className="text-4xl font-display font-bold text-gray-300 mb-1 truncate">{match.currentNonStriker || '-'}</div>
+                            <div className="text-3xl font-mono text-gray-400">
+                                {nonStrikerP?.runs || 0} <span className="text-xl text-gray-600">({nonStrikerP?.balls || 0})</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* RIGHT: Scorecard */}
+                <div className="w-1/3 bg-gray-900 flex flex-col border-l border-gray-800">
+                    <div className="p-6 bg-black border-b border-gray-800">
+                        <h3 className="text-white font-display font-bold text-xl uppercase tracking-wider">Scorecard</h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        {battingStats?.map((p, i) => (
+                            <div key={i} className={`flex justify-between items-center pb-3 border-b border-gray-800 ${p.status === 'batting' ? 'opacity-100' : 'opacity-60'}`}>
+                                <div>
+                                    <div className={`font-bold text-lg ${p.status === 'batting' ? 'text-penrice-gold' : (p.status === 'out' ? 'text-red-500 line-through decoration-red-900/50' : 'text-white')}`}>
+                                        {p.name} {p.status === 'batting' && '*'}
+                                    </div>
+                                    <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{p.dismissal || (p.status === 'batting' ? 'Batting' : (p.status === 'not out' ? 'Not Out' : 'Yet to Bat'))}</div>
+                                </div>
+                                <div className={`font-mono text-xl ${p.status === 'waiting' ? 'text-gray-700' : 'text-white'}`}>
+                                    {p.runs} <span className="text-sm text-gray-600">({p.balls})</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Container */}
+            <div className="absolute bottom-0 left-0 right-0 z-50 flex flex-col">
+                {/* Commentary */}
+                <div className="h-24 bg-penrice-navy border-t-4 border-penrice-gold flex items-center px-8 relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-24 bg-penrice-gold flex items-center justify-center text-black font-bold text-2xl z-10 shadow-lg">
+                        <i className="fa-solid fa-microphone-lines"></i>
+                    </div>
+                    <div className="pl-24 w-full">
+                        {lastEvent ? (
+                            <div className="flex items-center gap-6 animate-fade-in-up">
+                                <span className="font-mono text-gray-400 font-bold text-lg">{lastEvent.time}</span>
+                                <div className="flex items-center gap-4">
+                                    {/* Score / Event Type Badge */}
+                                    <div className={`font-display font-bold text-3xl px-4 py-1 leading-none ${['WICKET','HOWZAT!'].includes(lastEvent.type) ? 'bg-red-600 text-white' : 'bg-white text-black'}`}>
+                                        {lastEvent.type}
+                                    </div>
+                                    <div className="text-white text-2xl font-bold uppercase truncate">
+                                        {lastEvent.desc}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <span className="text-gray-400 font-bold uppercase tracking-widest text-lg ml-8">Awaiting start of play...</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Ticker - Bottom */}
+                {allMatches && (
+                    <div className="relative z-50">
+                       <Marquee matches={allMatches} />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- Main Cricket Card Component ---
 export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: Match[] }) => {
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home');
@@ -71,178 +262,6 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
       return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
-  // Presentation Mode Component
-  const PresentationOverlay = () => {
-      const battingStats = isPenriceBatting ? match.homeTeamStats : match.awayTeamStats;
-      const teamName = isPenriceBatting ? match.teamName : match.opponent;
-      const score = isPenriceBatting ? match.homeScore : match.awayScore;
-      const wickets = isPenriceBatting ? match.homeWickets : match.awayWickets;
-
-      const bowlingTeamName = isPenriceBatting ? match.opponent : match.teamName;
-      const bowlingScore = isPenriceBatting ? match.awayScore : match.homeScore;
-      const bowlingWickets = isPenriceBatting ? match.awayWickets : match.homeWickets;
-      
-      const lastEvent = match.events?.[match.events.length - 1];
-
-      // Logic for Status (Chasing / Target)
-      const isSecondInnings = (match.events || []).some(e => e.type === 'INNINGS BREAK');
-      const target = (bowlingScore || 0) + 1;
-      const runsNeeded = target - (score || 0);
-
-      // We use a Portal to attach this directly to the body, avoiding z-index/transform issues from parent containers
-      return createPortal(
-          <div className="fixed inset-0 z-[9999] bg-gray-900 text-white flex flex-col font-sans overflow-hidden h-screen w-screen">
-             {/* Celebration Overlay */}
-             {celebration && (
-                 <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-                     <div className="text-center animate-pop-in">
-                         <div className={`text-[15vw] font-display font-bold leading-none ${celebration.type === 'WICKET' || celebration.type === 'HOWZAT!' || celebration.text === 'DUCK!' ? 'text-red-600' : 'text-penrice-gold'} drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]`}>
-                             {celebration.text}
-                         </div>
-                         {celebration.type === '4' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Four Runs</div>}
-                         {celebration.type === '6' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Six Runs</div>}
-                         {(celebration.type === 'WICKET' || celebration.type === 'HOWZAT!') && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Batter Dismissed</div>}
-                     </div>
-                 </div>
-             )}
-
-             {/* Header */}
-             <div className="h-16 bg-black border-b border-gray-800 flex justify-between items-center px-8 shrink-0">
-                 <div className="flex items-center gap-4">
-                     <span className="text-penrice-gold font-display font-bold text-2xl uppercase tracking-wider">Penrice Match Centre</span>
-                     <div className="h-6 w-px bg-gray-700"></div>
-                     <span className="text-gray-400 font-bold uppercase tracking-widest text-sm">{match.yearGroup} • {match.league}</span>
-                 </div>
-                 <button onClick={() => setPresentationMode(false)} className="text-gray-400 hover:text-white uppercase font-bold text-xs tracking-widest border border-gray-700 px-4 py-2 hover:bg-gray-800 rounded-sm transition-colors">
-                     Exit Fullscreen (ESC)
-                 </button>
-             </div>
-
-             {/* Main Content */}
-             <div className="flex-1 flex overflow-hidden pb-12">
-                 {/* LEFT: Big Score & Current Play */}
-                 <div className="w-2/3 p-12 flex flex-col justify-center border-r border-gray-800 relative bg-gradient-to-br from-gray-900 to-black">
-                     <div className="absolute top-8 left-8 text-penrice-gold font-bold uppercase tracking-[0.2em] text-lg">Batting Now</div>
-                     
-                     <div className="mb-12">
-                         <h1 className="font-display font-bold text-6xl uppercase mb-2 text-white tracking-tight">{teamName}</h1>
-                         <div className="flex items-start gap-12">
-                             <div className="flex flex-col">
-                                <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter mb-4">
-                                    {score}<span className="text-gray-600">/</span>{wickets}
-                                </div>
-                                <div className="flex items-center gap-4 pl-2">
-                                     <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Bowler</div>
-                                     <div className="h-4 w-px bg-gray-700"></div>
-                                     <div className="text-2xl font-display font-bold text-white uppercase">{match.currentBowler || '-'}</div>
-                                     <div className="font-mono text-2xl text-penrice-gold">{bowlerFigures}</div>
-                                </div>
-                             </div>
-                             
-                             <div className="flex flex-col items-start gap-6 pt-8">
-                                 <div className="text-5xl font-bold text-gray-500 uppercase tracking-widest">
-                                     Ov {match.currentOver?.toFixed(1)} <span className="text-3xl text-gray-700">/ {match.maxOvers || 20}</span>
-                                 </div>
-                                 <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-6 py-4 rounded-sm border-l-4 border-gray-600">
-                                     {isSecondInnings ? (
-                                         <>
-                                            <span className="text-gray-500 mr-2">Target {target} •</span>
-                                            <span className="text-white">Need {Math.max(0, runsNeeded)} to win</span>
-                                         </>
-                                     ) : (
-                                         <>
-                                            <span className="text-gray-500 mr-2">1st Innings •</span>
-                                            <span className="text-white">Setting Target</span>
-                                         </>
-                                     )}
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-12">
-                         {/* Striker */}
-                         <div className="bg-gray-800/50 p-6 border-l-4 border-penrice-gold backdrop-blur-sm">
-                             <div className="text-gray-400 font-bold uppercase tracking-widest text-sm mb-2">Striker</div>
-                             <div className="text-4xl font-display font-bold text-white mb-1 truncate">{match.currentStriker || '-'}</div>
-                             <div className="text-3xl font-mono text-penrice-gold">
-                                 {strikerP?.runs || 0} <span className="text-xl text-gray-500">({strikerP?.balls || 0})</span>
-                             </div>
-                         </div>
-                         
-                         {/* Non-Striker */}
-                         <div className="bg-gray-800/30 p-6 border-l-4 border-gray-600">
-                             <div className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-2">Non-Striker</div>
-                             <div className="text-4xl font-display font-bold text-gray-300 mb-1 truncate">{match.currentNonStriker || '-'}</div>
-                             <div className="text-3xl font-mono text-gray-400">
-                                 {nonStrikerP?.runs || 0} <span className="text-xl text-gray-600">({nonStrikerP?.balls || 0})</span>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-
-                 {/* RIGHT: Scorecard */}
-                 <div className="w-1/3 bg-gray-900 flex flex-col border-l border-gray-800">
-                     <div className="p-6 bg-black border-b border-gray-800">
-                         <h3 className="text-white font-display font-bold text-xl uppercase tracking-wider">Scorecard</h3>
-                     </div>
-                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                         {battingStats?.map((p, i) => (
-                             <div key={i} className={`flex justify-between items-center pb-3 border-b border-gray-800 ${p.status === 'batting' ? 'opacity-100' : 'opacity-60'}`}>
-                                 <div>
-                                     <div className={`font-bold text-lg ${p.status === 'batting' ? 'text-penrice-gold' : (p.status === 'out' ? 'text-red-500 line-through decoration-red-900/50' : 'text-white')}`}>
-                                         {p.name} {p.status === 'batting' && '*'}
-                                     </div>
-                                     <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{p.dismissal || (p.status === 'batting' ? 'Batting' : (p.status === 'not out' ? 'Not Out' : 'Yet to Bat'))}</div>
-                                 </div>
-                                 <div className={`font-mono text-xl ${p.status === 'waiting' ? 'text-gray-700' : 'text-white'}`}>
-                                     {p.runs} <span className="text-sm text-gray-600">({p.balls})</span>
-                                 </div>
-                             </div>
-                         ))}
-                     </div>
-                 </div>
-             </div>
-
-             {/* Footer Container */}
-             <div className="absolute bottom-0 left-0 right-0 z-50 flex flex-col">
-                 {/* Commentary */}
-                 <div className="h-24 bg-penrice-navy border-t-4 border-penrice-gold flex items-center px-8 relative overflow-hidden">
-                     <div className="absolute left-0 top-0 bottom-0 w-24 bg-penrice-gold flex items-center justify-center text-black font-bold text-2xl z-10 shadow-lg">
-                         <i className="fa-solid fa-microphone-lines"></i>
-                     </div>
-                     <div className="pl-24 w-full">
-                         {lastEvent ? (
-                             <div className="flex items-center gap-6 animate-fade-in-up">
-                                 <span className="font-mono text-gray-400 font-bold text-lg">{lastEvent.time}</span>
-                                 <div className="flex items-center gap-4">
-                                     {/* Score / Event Type Badge */}
-                                     <div className={`font-display font-bold text-3xl px-4 py-1 leading-none ${['WICKET','HOWZAT!'].includes(lastEvent.type) ? 'bg-red-600 text-white' : 'bg-white text-black'}`}>
-                                         {lastEvent.type}
-                                     </div>
-                                     <div className="text-white text-2xl font-bold uppercase truncate">
-                                         {lastEvent.desc}
-                                     </div>
-                                 </div>
-                             </div>
-                         ) : (
-                             <span className="text-gray-400 font-bold uppercase tracking-widest text-lg ml-8">Awaiting start of play...</span>
-                         )}
-                     </div>
-                 </div>
-
-                 {/* Ticker - Bottom */}
-                 {allMatches && (
-                     <div className="relative z-50">
-                        <Marquee matches={allMatches} />
-                     </div>
-                 )}
-             </div>
-          </div>,
-          document.body // Portal Target
-      );
-  };
-
   // Scorecard Row Component
   const ScorecardTable = ({ stats, striker }: { stats: PlayerStats[] | undefined, striker?: string }) => {
       if (!stats || stats.length === 0) return <div className="text-xs text-gray-400 italic text-center py-4">Waiting for team data...</div>;
@@ -291,7 +310,15 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
 
   return (
     <>
-    {presentationMode && <PresentationOverlay />}
+    {presentationMode && createPortal(
+        <CricketPresentationOverlay 
+            match={match} 
+            allMatches={allMatches} 
+            celebration={celebration} 
+            onClose={() => setPresentationMode(false)} 
+        />, 
+        document.body
+    )}
     <div className={`w-full bg-white border border-gray-200 transition-all duration-300 relative z-10 ${expanded ? 'border-black card-shadow-hover z-50' : 'hover:border-black hover:card-shadow-hover'}`}>
       {/* Header */}
       <div className="grid grid-cols-2 cursor-pointer border-b border-gray-100" onClick={() => setExpanded(!expanded)}>
