@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Penrice Match Centre</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind (Kept via CDN for simplicity to match existing styles) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Oswald', 'sans-serif'],
+              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+            },
+            colors: {
+              penrice: {
+                navy: '#002855',
+                gold: '#FFB81C',
+                red: '#DC2626',
+                black: '#18181b'
+              }
+            },
+            animation: {
+              marquee: 'marquee 40s linear infinite',
+              pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              marquee: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-50%)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #f4f4f5;
+        color: #18181b;
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Custom Scrollbar */
+      .custom-scroll::-webkit-scrollbar { width: 4px; }
+      .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+      .custom-scroll::-webkit-scrollbar-thumb { background: #d4d4d8; }
+      
+      /* Utilities */
+      .card-shadow-hover { box-shadow: 4px 4px 0px rgba(0,0,0,0.1); }
+      .card-shadow-hard { box-shadow: 4px 4px 0px rgba(0,0,0,1); }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
