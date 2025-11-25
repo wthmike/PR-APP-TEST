@@ -50,16 +50,14 @@ export const CricketLogic = {
     let nO = match.currentOver || 0;
     
     // FIX: Only increment to next integer if we aren't already there.
-    // If processBall set us to 1.0 (End of Over 1), we stay at 1.0 for start of Over 2.
-    // If we are at 0.4 (manual end), we round up to 1.0.
     if (nO % 1 !== 0) {
         nO = Math.floor(nO) + 1;
     }
 
     await MatchesService.update(match.id, {
         currentOver: nO,
-        currentStriker: match.currentNonStriker,
-        currentNonStriker: match.currentStriker,
+        currentStriker: match.currentNonStriker || '',
+        currentNonStriker: match.currentStriker || '',
         currentBowler: '',
         events: [...(match.events||[]), { type: 'END OVER', player: '', time: `Ov ${nO}`, desc: 'End of Over.' }],
     });
@@ -125,11 +123,14 @@ export const CricketLogic = {
     const statsKey = isHome ? 'homeTeamStats' : 'awayTeamStats';
     const bowlStatsKey = isHome ? 'awayTeamStats' : 'homeTeamStats';
 
-    // Deep copy stats
-    let stats = [...(isHome ? match.homeTeamStats : match.awayTeamStats || []) as PlayerStats[]];
-    let bowlStats = [...(isHome ? match.awayTeamStats : match.homeTeamStats || []) as PlayerStats[]];
+    // Safe retrieval of stats arrays with default empty array if undefined
+    let stats = [...((isHome ? match.homeTeamStats : match.awayTeamStats) || [])];
+    let bowlStats = [...((isHome ? match.awayTeamStats : match.homeTeamStats) || [])];
+    
     let score = isHome ? match.homeScore : match.awayScore;
-    let wickets = isHome ? match.homeWickets : match.awayWickets || 0;
+    // Fix: Operator precedence to ensure wickets is always a number
+    let wickets = (isHome ? match.homeWickets : match.awayWickets) || 0;
+    
     let over = match.currentOver || 0;
     let sName = match.currentStriker;
     let nsName = match.currentNonStriker;
