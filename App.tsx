@@ -223,7 +223,7 @@ export default function App() {
                  {matches.map(match => (
                     match.sport === 'netball' 
                       ? <NetballCard key={match.id} match={match} /> 
-                      : <CricketCard key={match.id} match={match} />
+                      : <CricketCard key={match.id} match={match} allMatches={matches} />
                  ))}
              </div>
           )}

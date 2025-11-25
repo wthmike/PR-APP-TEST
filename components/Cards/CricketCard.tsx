@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Match, PlayerStats, GameEvent } from '../../types';
 import { Badge } from '../Shared';
+import { Marquee } from '../Layout/Marquee';
 
-export const CricketCard = ({ match }: { match: Match }) => {
+export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: Match[] }) => {
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home');
   const [presentationMode, setPresentationMode] = useState(false);
@@ -75,14 +76,18 @@ export const CricketCard = ({ match }: { match: Match }) => {
       const teamName = isPenriceBatting ? match.teamName : match.opponent;
       const score = isPenriceBatting ? match.homeScore : match.awayScore;
       const wickets = isPenriceBatting ? match.homeWickets : match.awayWickets;
+
+      const bowlingTeamName = isPenriceBatting ? match.opponent : match.teamName;
+      const bowlingScore = isPenriceBatting ? match.awayScore : match.homeScore;
+      const bowlingWickets = isPenriceBatting ? match.awayWickets : match.homeWickets;
       
       const lastEvent = match.events?.[match.events.length - 1];
 
       return (
-          <div className="fixed inset-0 z-[100] bg-gray-900 text-white flex flex-col font-sans overflow-hidden">
+          <div className="fixed inset-0 z-[9999] bg-gray-900 text-white flex flex-col font-sans overflow-hidden h-screen w-screen">
              {/* Celebration Overlay */}
              {celebration && (
-                 <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                 <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
                      <div className="text-center animate-pop-in">
                          <div className={`text-[15vw] font-display font-bold leading-none ${celebration.type === 'WICKET' || celebration.type === 'HOWZAT!' || celebration.text === 'DUCK!' ? 'text-red-600' : 'text-penrice-gold'} drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]`}>
                              {celebration.text}
@@ -95,7 +100,7 @@ export const CricketCard = ({ match }: { match: Match }) => {
              )}
 
              {/* Header */}
-             <div className="h-16 bg-black border-b border-gray-800 flex justify-between items-center px-8">
+             <div className="h-16 bg-black border-b border-gray-800 flex justify-between items-center px-8 shrink-0">
                  <div className="flex items-center gap-4">
                      <span className="text-penrice-gold font-display font-bold text-2xl uppercase tracking-wider">Penrice Match Centre</span>
                      <div className="h-6 w-px bg-gray-700"></div>
@@ -107,7 +112,7 @@ export const CricketCard = ({ match }: { match: Match }) => {
              </div>
 
              {/* Main Content */}
-             <div className="flex-1 flex overflow-hidden">
+             <div className="flex-1 flex overflow-hidden pb-12">
                  {/* LEFT: Big Score & Current Play */}
                  <div className="w-2/3 p-12 flex flex-col justify-center border-r border-gray-800 relative bg-gradient-to-br from-gray-900 to-black">
                      <div className="absolute top-8 left-8 text-penrice-gold font-bold uppercase tracking-[0.2em] text-lg">Batting Now</div>
@@ -118,8 +123,13 @@ export const CricketCard = ({ match }: { match: Match }) => {
                              <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter">
                                  {score}<span className="text-gray-600">/</span>{wickets}
                              </div>
-                             <div className="text-4xl font-bold text-gray-500 uppercase tracking-widest">
-                                 Ov {match.currentOver?.toFixed(1)} <span className="text-2xl text-gray-700">/ {match.maxOvers}</span>
+                             <div className="flex flex-col items-start gap-4">
+                                 <div className="text-4xl font-bold text-gray-500 uppercase tracking-widest">
+                                     Ov {match.currentOver?.toFixed(1)} <span className="text-2xl text-gray-700">/ {match.maxOvers || 20}</span>
+                                 </div>
+                                 <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-sm border-l-4 border-gray-600">
+                                     vs {bowlingTeamName} <span className="text-white ml-2">{bowlingScore}-{bowlingWickets}</span>
+                                 </div>
                              </div>
                          </div>
                      </div>
@@ -176,23 +186,39 @@ export const CricketCard = ({ match }: { match: Match }) => {
                  </div>
              </div>
 
-             {/* Footer: Commentary */}
-             <div className="h-24 bg-penrice-navy border-t-4 border-penrice-gold flex items-center px-8 relative overflow-hidden">
-                 <div className="absolute left-0 top-0 bottom-0 w-24 bg-penrice-gold flex items-center justify-center text-black font-bold text-2xl z-10">
-                     <i className="fa-solid fa-microphone-lines"></i>
-                 </div>
-                 <div className="pl-24 w-full">
-                     {lastEvent ? (
-                         <div className="flex items-center gap-6 animate-fade-in-up">
-                             <span className="font-mono text-penrice-gold font-bold text-2xl">{lastEvent.time}</span>
-                             <div className="text-white text-2xl font-bold uppercase truncate">
-                                 {lastEvent.desc}
+             {/* Footer Container */}
+             <div className="absolute bottom-0 left-0 right-0 z-50 flex flex-col">
+                 {/* Commentary */}
+                 <div className="h-24 bg-penrice-navy border-t-4 border-penrice-gold flex items-center px-8 relative overflow-hidden">
+                     <div className="absolute left-0 top-0 bottom-0 w-24 bg-penrice-gold flex items-center justify-center text-black font-bold text-2xl z-10 shadow-lg">
+                         <i className="fa-solid fa-microphone-lines"></i>
+                     </div>
+                     <div className="pl-24 w-full">
+                         {lastEvent ? (
+                             <div className="flex items-center gap-6 animate-fade-in-up">
+                                 <span className="font-mono text-gray-400 font-bold text-lg">{lastEvent.time}</span>
+                                 <div className="flex items-center gap-4">
+                                     {/* Score / Event Type Badge */}
+                                     <div className={`font-display font-bold text-3xl px-4 py-1 leading-none ${['WICKET','HOWZAT!'].includes(lastEvent.type) ? 'bg-red-600 text-white' : 'bg-white text-black'}`}>
+                                         {lastEvent.type}
+                                     </div>
+                                     <div className="text-white text-2xl font-bold uppercase truncate">
+                                         {lastEvent.desc}
+                                     </div>
+                                 </div>
                              </div>
-                         </div>
-                     ) : (
-                         <span className="text-gray-400 font-bold uppercase tracking-widest text-lg ml-8">Awaiting start of play...</span>
-                     )}
+                         ) : (
+                             <span className="text-gray-400 font-bold uppercase tracking-widest text-lg ml-8">Awaiting start of play...</span>
+                         )}
+                     </div>
                  </div>
+
+                 {/* Ticker - Bottom */}
+                 {allMatches && (
+                     <div className="relative z-50">
+                        <Marquee matches={allMatches} />
+                     </div>
+                 )}
              </div>
           </div>
       );
