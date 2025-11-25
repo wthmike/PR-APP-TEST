@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 import { db } from './services/firebase';
 import { Match } from './types';
 import { Marquee } from './components/Layout/Marquee';
@@ -18,8 +17,7 @@ export default function App() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'matches')); // Simple query, sort on client for flexibility
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = db.collection('matches').onSnapshot((snapshot) => {
       const ms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
       // Sort: Live first, then by Last Updated
       ms.sort((a, b) => {
