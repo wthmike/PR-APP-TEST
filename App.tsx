@@ -51,7 +51,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center h-auto md:h-24">
            <div className="flex items-center w-full md:w-auto px-6 py-4 md:py-0">
                <div>
-                   <h1 className="text-4xl font-display font-bold text-black leading-[0.85] uppercase tracking-tight">Match<br/>Centre</h1>
+                   <h1 className="text-4xl font-display font-bold text-black leading-[0.85] uppercase tracking-tight">Penrice<br/>Match Centre</h1>
                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-1.5 ml-0.5">Official Scores</span>
                </div>
            </div>

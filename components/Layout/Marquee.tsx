@@ -27,8 +27,8 @@ export const Marquee = ({ matches }: { matches: Match[] }) => {
 
     // Sport Icon/Text
     const SportLabel = ({ sport }: { sport: string }) => (
-        <span className="font-display font-bold text-white uppercase tracking-wider mr-3 text-sm">
-            {sport === 'netball' ? <i className="fa-solid fa-basketball mr-2 text-gray-400"></i> : <i className="fa-solid fa-baseball-bat-ball mr-2 text-gray-400"></i>}
+        <span className="font-display font-bold text-white uppercase tracking-wider mr-3 text-sm flex items-center">
+            <span className="mr-2 text-base">{sport.toLowerCase() === 'netball' ? '🏐' : '🏏'}</span>
             {sport}
         </span>
     );
@@ -48,7 +48,7 @@ export const Marquee = ({ matches }: { matches: Match[] }) => {
        );
     } else {
        // Cricket Logic
-       const statusText = isLive ? `OV ${m.currentOver?.toFixed(1) || '0.0'}` : 'FT';
+       const statusText = isLive ? `OV ${m.currentOver?.toFixed(1) || '0.0'} / ${m.maxOvers || 20}` : 'FT';
        const isPenriceBatting = m.penriceStatus === 'batting';
        
        return (
