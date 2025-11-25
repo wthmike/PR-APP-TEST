@@ -40,12 +40,13 @@ export const CricketCard = ({ match }: { match: Match }) => {
             {batters.map((p, i) => (
                 <div key={i} className="flex justify-between items-center py-2 border-b border-gray-100 text-xs">
                     <div className="flex-1">
-                        <div className={`${p.status === 'batting' ? 'text-black font-bold' : (p.status === 'out' ? 'text-red-600 line-through decoration-red-200' : 'text-gray-500 font-medium')}`}>
+                        <div className={`${(p.status === 'batting' || p.status === 'not out') ? 'text-black font-bold' : (p.status === 'out' ? 'text-red-600 line-through decoration-red-200' : 'text-gray-500 font-medium')}`}>
                             {p.name} {p.name === striker && p.status === 'batting' && '●'}
                         </div>
                         {p.dismissal && <div className="text-[9px] text-gray-400 mt-0.5 uppercase tracking-wide">{p.dismissal}</div>}
+                        {p.status === 'not out' && <div className="text-[9px] text-penrice-navy mt-0.5 uppercase tracking-wide font-bold">Not Out</div>}
                     </div>
-                    <div className="font-mono font-bold text-black text-sm w-16 text-right">
+                    <div className={`font-mono font-bold text-sm w-16 text-right ${p.status === 'waiting' ? 'text-gray-300' : 'text-black'}`}>
                         {p.runs} <span className="text-gray-300 font-sans font-normal text-[9px]">({p.balls})</span>
                     </div>
                 </div>
