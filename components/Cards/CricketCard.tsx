@@ -195,10 +195,25 @@ export const CricketCard = ({ match }: { match: Match }) => {
                                 <div className="font-mono text-[10px] font-bold text-gray-400 w-8 pt-1">{e.time}</div>
                                 <div className="flex-1">
                                     <div className="text-xs font-bold text-black uppercase flex flex-wrap items-center leading-tight">
-                                        {isWicket && <span className="bg-red-600 text-white px-2 py-0.5 text-[9px] mr-2">WICKET</span>}
+                                        {isWicket && <span className="bg-red-600 text-white px-2 py-0.5 text-[9px] mr-2">HOWZAT!</span>}
                                         {isBoundary && <span className="border border-black px-1.5 py-px text-[9px] mr-2">{e.type}</span>}
                                         {e.player}
-                                        {e.duckType && <span className="ml-2 bg-penrice-gold text-black text-[9px] px-1 border border-black">DUCK</span>}
+                                        {e.duckType === 'golden' && (
+                                            <>
+                                                <span className="ml-2 bg-penrice-gold text-black text-[9px] px-1.5 py-0.5 border border-black">
+                                                    QUACK QUACK
+                                                </span>
+                                                <span className="text-sm animate-duck-slide inline-block origin-bottom-left ml-1">🦆</span>
+                                            </>
+                                        )}
+                                        {e.duckType === 'regular' && (
+                                            <>
+                                                <span className="ml-2 bg-penrice-gold text-black text-[9px] px-1.5 py-0.5 border border-black">
+                                                    QUACK
+                                                </span>
+                                                <span className="text-sm animate-duck-slide inline-block origin-bottom-left ml-1">🦆</span>
+                                            </>
+                                        )}
                                     </div>
                                     {e.desc && <div className="text-xs text-gray-500 mt-1">{e.desc}</div>}
                                 </div>

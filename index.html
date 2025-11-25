@@ -33,11 +33,16 @@
             animation: {
               marquee: 'marquee 40s linear infinite',
               pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'duck-slide': 'duckSlide 2s ease-in-out infinite',
             },
             keyframes: {
               marquee: {
                 '0%': { transform: 'translateX(0)' },
                 '100%': { transform: 'translateX(-50%)' },
+              },
+              duckSlide: {
+                '0%, 100%': { transform: 'translateX(0) rotate(0deg)' },
+                '50%': { transform: 'translateX(6px) rotate(12deg)' },
               }
             }
           }

@@ -3,21 +3,21 @@ import { MatchesService } from './firebase';
 
 // Phrasings for commentary
 const PHRASES: Record<string, string[]> = {
-  0: ["Solid defense.", "Straight to the fielder.", "Beaten outside off.", "No run.", "Good line and length.", "Watchful play.", "Can't get that away.", "Well fielded.", "Respects the good ball."],
-  1: ["Quick single taken.", "Pushed into the gap.", "Strike rotated.", "Good running.", "Dropped fast and they scramble.", "Working it around."],
-  2: ["Coming back for two.", "Good running between the wickets.", "Misfield allows the second.", "Nice placement for a couple.", "Pushing the fielder."],
-  3: ["Great running! Three taken.", "Chased down just inside the rope.", "They push hard for the third.", "Excellent fitness shown."],
-  4: ["CRUNCHED! Through the covers!", "Glorious shot! Four runs.", "Raced to the fence!", "Elegant drive!", "Short and punished!", "Finds the gap beautifully!", "One bounce and over!"],
-  6: ["MAXIMUM! That is huge!", "Into the next postcode!", "Clean hitting!", "Out of the ground!", "That's gone into orbit!", "Monster hit over the ropes!", "That's in the car park!"],
+  0: ["Crowd goes mild.", "Straight to the fielder. Boring.", "Solid defense... yawn.", "No run. Good practice shot.", "Can't get that past the ring.", "Watchful... or stuck?", "Respects the good ball. Fair play."],
+  1: ["Cheeky single!", "Tip and run.", "Quick feet!", "Scrambling through.", "Off the mark.", "Strike rotated."],
+  2: ["Coming back for two!", "Great running!", "Pushing the fielder!", "Legs pumping!", "Easy couple.", "Double trouble!"],
+  3: ["Three runs! Cardio day!", "Running them ragged!", "Excellent hustle!", "Are they marathon runners?", "Chased down at the rope."],
+  4: ["CRUNCHED! Four runs!", "Raced to the fence!", "Lovely jubbly!", "Don't bother running!", "Pinged it!", "Through the gap like a tracer bullet!", "Elegant drive!"],
+  6: ["MAXIMUM! Have some of that!", "Call NASA, that's in orbit!", "In the car park!", "That's huge!", "Monster hit! Clean as a whistle!", "Into the next postcode!"],
 };
 
 const OUT_PHRASES: Record<string, string[]> = {
-  BOWLED: ["CLEAN BOWLED! What a delivery!", "Knocked him over! Timber!", "Through the gate!", "Middle stump uprooted!", "A jaffa! Stumps flying!"],
-  CAUGHT: ["CAUGHT! Straight to the fielder.", "Edged and gone!", "Snatched safely out of the air.", "Simple catch taken.", "Great hands in the deep!"],
-  LBW: ["LBW! Plumb in front!", "Trapped on the crease!", "Huge appeal... and given!", "Umpire raises the finger!", "Caught dead in front!"],
-  RUN_OUT: ["RUN OUT! Disaster!", "Mix up in the middle!", "Direct hit found him short!", "Sent back too late!"],
-  STUMPED: ["STUMPED! Quick hands by the keeper.", "Beaten in flight and gone!", "Dancing down the track and misses."],
-  GENERIC: ["WICKET! They have to go.", "Dismissed!", "A crucial breakthrough!"]
+  BOWLED: ["CASTLED! Stumps everywhere!", "Timber! Furniture rearranged!", "Cleaned him up!", "Through the gate! See ya!", "Knocked him over!"],
+  CAUGHT: ["SNATCHED! Gobbled up.", "Straight down the throat.", "Safe hands!", "Gone fishing! Hook, line and sinker.", "Edged and gone! Thanks very much."],
+  LBW: ["PLUMB! Umpire says YES!", "Trapped in front! No doubt.", "Hit the pads... GIVEN!", "Dead duck in front of stumps.", "Caught dead in front!"],
+  RUN_OUT: ["DISASTER! Mix up!", "Sent back... too late!", "Direct hit! Cheerio.", "What was he thinking?", "Comedy of errors!"],
+  STUMPED: ["BAMBOOZLED! Keeper whips them off.", "Dancing down... and missed!", "Left his ground, lost his wicket.", "Beaten in flight!"],
+  GENERIC: ["HOWZAT! They have to go.", "Dismissed! The long walk back.", "Back to the hutch!", "A crucial breakthrough!"]
 };
 
 export const CricketLogic = {

@@ -141,35 +141,85 @@ export const CricketAdmin = ({ match }: { match: Match }) => {
 
         {/* Score Correction Panel - REDESIGNED */}
         <div className="bg-gray-50 border border-gray-200 p-4 mb-6 rounded-sm">
-            <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">Score Correction</div>
-            <div className="grid grid-cols-3 gap-3">
-                <div className="flex flex-col">
-                    <label className="text-[9px] font-bold text-black mb-1 uppercase text-center">Overs</label>
+            <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
+                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Score Correction</span>
+                 <div className="flex flex-col items-end">
+                    <label className="text-[9px] font-bold text-gray-500 uppercase mb-1">Current Over</label>
                     <input 
                         type="number" 
                         step="0.1"
-                        className="w-full text-center text-base font-bold border border-gray-300 bg-white p-2 rounded-sm outline-none focus:border-black focus:ring-1 focus:ring-black" 
+                        className="w-20 text-center text-sm font-bold border border-gray-300 bg-white p-1 rounded-sm outline-none focus:border-black" 
                         value={match.currentOver || 0} 
                         onChange={(e) => CricketLogic.manualScoreUpdate(match, 'overs', parseFloat(e.target.value) || 0)}
                     />
+                 </div>
+            </div>
+
+            <div className="space-y-3">
+                {/* Home Team Row */}
+                <div className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-12 md:col-span-4">
+                        <span className="text-[10px] font-bold text-penrice-navy uppercase truncate block">{match.teamName} (Home)</span>
+                    </div>
+                    <div className="col-span-6 md:col-span-4">
+                        <div className="relative">
+                            <div className="absolute left-2 top-0 bottom-0 flex items-center pointer-events-none">
+                                <span className="text-[9px] font-bold text-gray-400">R</span>
+                            </div>
+                            <input 
+                                type="number" 
+                                className="w-full pl-6 pr-2 py-2 text-base font-bold border border-gray-300 bg-white rounded-sm outline-none focus:border-black"
+                                value={match.homeScore || 0} 
+                                onChange={(e) => CricketLogic.manualScoreUpdate(match, 'runs', parseInt(e.target.value) || 0, true)}
+                            />
+                        </div>
+                    </div>
+                    <div className="col-span-6 md:col-span-4">
+                        <div className="relative">
+                            <div className="absolute left-2 top-0 bottom-0 flex items-center pointer-events-none">
+                                <span className="text-[9px] font-bold text-gray-400">W</span>
+                            </div>
+                            <input 
+                                type="number" 
+                                className="w-full pl-6 pr-2 py-2 text-base font-bold border border-gray-300 bg-white rounded-sm outline-none focus:border-black"
+                                value={match.homeWickets || 0} 
+                                onChange={(e) => CricketLogic.manualScoreUpdate(match, 'wickets', parseInt(e.target.value) || 0, true)}
+                            />
+                        </div>
+                    </div>
                 </div>
-                <div className="flex flex-col">
-                    <label className="text-[9px] font-bold text-black mb-1 uppercase text-center truncate px-1">Runs</label>
-                    <input 
-                        type="number" 
-                        className="w-full text-center text-base font-bold border border-gray-300 bg-white p-2 rounded-sm outline-none focus:border-black focus:ring-1 focus:ring-black" 
-                        value={isPenriceBatting ? match.homeScore : match.awayScore} 
-                        onChange={(e) => CricketLogic.manualScoreUpdate(match, 'runs', parseInt(e.target.value) || 0, isPenriceBatting)}
-                    />
-                </div>
-                <div className="flex flex-col">
-                    <label className="text-[9px] font-bold text-black mb-1 uppercase text-center">Wickets</label>
-                    <input 
-                        type="number" 
-                        className="w-full text-center text-base font-bold border border-gray-300 bg-white p-2 rounded-sm outline-none focus:border-black focus:ring-1 focus:ring-black" 
-                        value={isPenriceBatting ? match.homeWickets : match.awayWickets} 
-                        onChange={(e) => CricketLogic.manualScoreUpdate(match, 'wickets', parseInt(e.target.value) || 0, isPenriceBatting)}
-                    />
+
+                {/* Away Team Row */}
+                <div className="grid grid-cols-12 gap-2 items-center">
+                     <div className="col-span-12 md:col-span-4">
+                        <span className="text-[10px] font-bold text-black uppercase truncate block">{match.opponent} (Away)</span>
+                    </div>
+                    <div className="col-span-6 md:col-span-4">
+                        <div className="relative">
+                            <div className="absolute left-2 top-0 bottom-0 flex items-center pointer-events-none">
+                                <span className="text-[9px] font-bold text-gray-400">R</span>
+                            </div>
+                            <input 
+                                type="number" 
+                                className="w-full pl-6 pr-2 py-2 text-base font-bold border border-gray-300 bg-white rounded-sm outline-none focus:border-black"
+                                value={match.awayScore || 0} 
+                                onChange={(e) => CricketLogic.manualScoreUpdate(match, 'runs', parseInt(e.target.value) || 0, false)}
+                            />
+                        </div>
+                    </div>
+                    <div className="col-span-6 md:col-span-4">
+                        <div className="relative">
+                            <div className="absolute left-2 top-0 bottom-0 flex items-center pointer-events-none">
+                                <span className="text-[9px] font-bold text-gray-400">W</span>
+                            </div>
+                            <input 
+                                type="number" 
+                                className="w-full pl-6 pr-2 py-2 text-base font-bold border border-gray-300 bg-white rounded-sm outline-none focus:border-black"
+                                value={match.awayWickets || 0} 
+                                onChange={(e) => CricketLogic.manualScoreUpdate(match, 'wickets', parseInt(e.target.value) || 0, false)}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
