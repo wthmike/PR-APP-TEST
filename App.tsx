@@ -44,7 +44,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-penrice-gold selection:text-black">
-      <Marquee />
+      <Marquee matches={matches} />
 
       {/* Header - Increased z-index to z-[60] to sit above expanded cards (z-50) */}
       <header className="bg-white border-b border-black sticky top-0 z-[60] shadow-sm">

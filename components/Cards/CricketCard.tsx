@@ -82,6 +82,7 @@ export const CricketCard = ({ match }: { match: Match }) => {
             <div className="flex items-center gap-2 mb-1">
                 {isLive ? <Badge color="red">LIVE</Badge> : (isResult ? <Badge color="black">FT</Badge> : <Badge>UPCOMING</Badge>)}
                 <Badge color="navy">CRICKET</Badge>
+                {match.yearGroup && <Badge color="gray">{match.yearGroup}</Badge>}
             </div>
             <div className="text-[10px] font-bold text-black uppercase tracking-wide">
               {match.league || 'Fixture'}

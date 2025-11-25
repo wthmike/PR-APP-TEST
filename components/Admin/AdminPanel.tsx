@@ -14,6 +14,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
   const [sport, setSport] = useState<SportType>('cricket');
   const [team, setTeam] = useState('Penrice Academy');
   const [opponent, setOpponent] = useState('');
+  const [yearGroup, setYearGroup] = useState('Year 7');
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +28,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         sport,
         teamName: team,
         opponent: opponent,
+        yearGroup: yearGroup,
         status: 'UPCOMING',
         league: 'School Fixture',
         lastUpdated: Date.now(),
@@ -89,7 +91,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         {/* Create Match */}
         <div className="p-4 md:p-8 border-b border-gray-100">
             <h3 className="text-[10px] font-bold text-black uppercase tracking-widest mb-4 md:mb-6 border-l-2 border-penrice-gold pl-3">Create New Fixture</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-end">
                 <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Sport</label>
                     <select 
@@ -100,6 +102,15 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                         <option value="cricket">Cricket</option>
                         <option value="netball">Netball</option>
                     </select>
+                </div>
+                 <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Year Group</label>
+                    <input 
+                        className="w-full border-b-2 border-gray-200 py-2 text-sm font-bold outline-none bg-transparent rounded-none"
+                        value={yearGroup}
+                        placeholder="e.g. Year 7"
+                        onChange={(e) => setYearGroup(e.target.value)}
+                    />
                 </div>
                 <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Our Team</label>
@@ -122,7 +133,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                     onClick={createMatch}
                     className="w-full py-3 bg-black hover:bg-penrice-gold hover:text-black text-white font-bold uppercase tracking-widest text-xs transition-colors border border-black"
                 >
-                    Create Match
+                    Create
                 </button>
             </div>
         </div>
@@ -134,14 +145,17 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                     <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
                         <div>
                             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Editing</span>
-                            <h4 className="font-display font-bold text-xl text-black uppercase leading-tight mt-1">{match.teamName} <span className="text-gray-300">vs</span> {match.opponent}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                                {match.yearGroup && <span className="bg-black text-white text-[9px] font-bold px-1.5 py-0.5">{match.yearGroup}</span>}
+                                <h4 className="font-display font-bold text-xl text-black uppercase leading-none">{match.teamName} <span className="text-gray-300">vs</span> {match.opponent}</h4>
+                            </div>
                         </div>
                         <button onClick={() => setDeleteCandidateId(match.id)} className="text-gray-300 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-sm">
                             <i className="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                         <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
                             <select 
@@ -154,12 +168,21 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                                 <option value="FT">Full Time</option>
                             </select>
                         </div>
-                         <div>
+                        <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">League</label>
                             <input 
                                 value={match.league || ''} 
                                 onChange={(e) => MatchesService.update(match.id, { league: e.target.value })}
                                 className="w-full border border-gray-300 p-2 text-xs h-10 rounded-sm"
+                            />
+                        </div>
+                         <div>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Year Group</label>
+                            <input 
+                                value={match.yearGroup || ''} 
+                                onChange={(e) => MatchesService.update(match.id, { yearGroup: e.target.value })}
+                                className="w-full border border-gray-300 p-2 text-xs h-10 rounded-sm"
+                                placeholder="e.g. Year 7"
                             />
                         </div>
                     </div>
