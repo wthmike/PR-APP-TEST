@@ -3,12 +3,21 @@ import { MatchesService } from './firebase';
 
 // Phrasings for commentary
 const PHRASES: Record<string, string[]> = {
-  0: ["Solid defense.", "Straight to the fielder.", "Beaten outside off.", "No run.", "Good line and length.", "Watchful play.", "Can't get that away.", "Well fielded."],
+  0: ["Solid defense.", "Straight to the fielder.", "Beaten outside off.", "No run.", "Good line and length.", "Watchful play.", "Can't get that away.", "Well fielded.", "Respects the good ball."],
   1: ["Quick single taken.", "Pushed into the gap.", "Strike rotated.", "Good running.", "Dropped fast and they scramble.", "Working it around."],
   2: ["Coming back for two.", "Good running between the wickets.", "Misfield allows the second.", "Nice placement for a couple.", "Pushing the fielder."],
   3: ["Great running! Three taken.", "Chased down just inside the rope.", "They push hard for the third.", "Excellent fitness shown."],
-  4: ["CRUNCHED! Through the covers!", "Glorious shot! Four runs.", "Raced to the fence!", "Elegant drive!", "Short and punished!", "Finds the gap beautifully!"],
-  6: ["MAXIMUM! That is huge!", "Into the next postcode!", "Clean hitting!", "Out of the ground!", "That's gone into orbit!", "Monster hit over the ropes!"],
+  4: ["CRUNCHED! Through the covers!", "Glorious shot! Four runs.", "Raced to the fence!", "Elegant drive!", "Short and punished!", "Finds the gap beautifully!", "One bounce and over!"],
+  6: ["MAXIMUM! That is huge!", "Into the next postcode!", "Clean hitting!", "Out of the ground!", "That's gone into orbit!", "Monster hit over the ropes!", "That's in the car park!"],
+};
+
+const OUT_PHRASES: Record<string, string[]> = {
+  BOWLED: ["CLEAN BOWLED! What a delivery!", "Knocked him over! Timber!", "Through the gate!", "Middle stump uprooted!", "A jaffa! Stumps flying!"],
+  CAUGHT: ["CAUGHT! Straight to the fielder.", "Edged and gone!", "Snatched safely out of the air.", "Simple catch taken.", "Great hands in the deep!"],
+  LBW: ["LBW! Plumb in front!", "Trapped on the crease!", "Huge appeal... and given!", "Umpire raises the finger!", "Caught dead in front!"],
+  RUN_OUT: ["RUN OUT! Disaster!", "Mix up in the middle!", "Direct hit found him short!", "Sent back too late!"],
+  STUMPED: ["STUMPED! Quick hands by the keeper.", "Beaten in flight and gone!", "Dancing down the track and misses."],
+  GENERIC: ["WICKET! They have to go.", "Dismissed!", "A crucial breakthrough!"]
 };
 
 export const CricketLogic = {
@@ -49,7 +58,7 @@ export const CricketLogic = {
   endOver: async (match: Match) => {
     let nO = match.currentOver || 0;
     
-    // FIX: Only increment to next integer if we aren't already there.
+    // Only increment to next integer if we aren't already there.
     if (nO % 1 !== 0) {
         nO = Math.floor(nO) + 1;
     }
@@ -69,9 +78,9 @@ export const CricketLogic = {
     const prevBattingStatsKey = isCurrentlyBatting ? 'homeTeamStats' : 'awayTeamStats';
     const nextBattingStatsKey = isCurrentlyBatting ? 'awayTeamStats' : 'homeTeamStats';
 
-    // Deep copy arrays
-    const prevBattingList = (isCurrentlyBatting ? match.homeTeamStats : match.awayTeamStats || []).map(p => ({...p}));
-    const nextBattingList = (isCurrentlyBatting ? match.awayTeamStats : match.homeTeamStats || []).map(p => ({...p}));
+    // Deep copy arrays - Wrap logic in parens to ensure fallback to [] happens before .map
+    const prevBattingList = ((isCurrentlyBatting ? match.homeTeamStats : match.awayTeamStats) || []).map(p => ({...p}));
+    const nextBattingList = ((isCurrentlyBatting ? match.awayTeamStats : match.homeTeamStats) || []).map(p => ({...p}));
 
     // Reset statuses
     prevBattingList.forEach(p => { if(p.status === 'batting') p.status = 'not out'; }); 
@@ -103,6 +112,18 @@ export const CricketLogic = {
     });
   },
 
+  undo: async (match: Match) => {
+    if(!match.history || match.history.length === 0) return;
+    const history = [...match.history];
+    const lastState = history.pop();
+    if(lastState) {
+        await MatchesService.update(match.id, {
+            ...lastState,
+            history: history
+        });
+    }
+  },
+
   processBall: async (match: Match, type: number | 'WD' | 'NB' | 'BYE' | 'LB' | 'WICKET' | 'END', dismissalDesc?: string) => {
     // Save history snapshot
     const historySnapshot = {
@@ -127,11 +148,10 @@ export const CricketLogic = {
     let stats = [...((isHome ? match.homeTeamStats : match.awayTeamStats) || [])];
     let bowlStats = [...((isHome ? match.awayTeamStats : match.homeTeamStats) || [])];
     
-    let score = isHome ? match.homeScore : match.awayScore;
-    // Fix: Operator precedence to ensure wickets is always a number
-    let wickets = (isHome ? match.homeWickets : match.awayWickets) || 0;
+    let score: number = (isHome ? match.homeScore : match.awayScore) || 0;
+    let wickets: number = (isHome ? match.homeWickets : match.awayWickets) || 0;
     
-    let over = match.currentOver || 0;
+    let over: number = match.currentOver || 0;
     let sName = match.currentStriker;
     let nsName = match.currentNonStriker;
 
@@ -153,7 +173,8 @@ export const CricketLogic = {
     if (typeof type === 'number') {
         runs = type; faced = true; 
         evtType = type === 0 ? '.' : (type === 4 ? '4' : (type === 6 ? '6' : 'RUN')); 
-        stats[sIdx].runs += runs; stats[sIdx].balls += 1;
+        stats[sIdx].runs = (stats[sIdx].runs || 0) + runs;
+        stats[sIdx].balls = (stats[sIdx].balls || 0) + 1;
         if(bIdx !== -1) { 
             bowlStats[bIdx].bowlBalls = (bowlStats[bIdx].bowlBalls || 0) + 1; 
             bowlStats[bIdx].bowlRuns = (bowlStats[bIdx].bowlRuns || 0) + runs; 
@@ -166,54 +187,67 @@ export const CricketLogic = {
         if(bIdx !== -1) bowlStats[bIdx].bowlRuns = (bowlStats[bIdx].bowlRuns || 0) + 1;
     } else if (['BYE','LB'].includes(type as string)) {
         runs = 1; faced = true; 
-        stats[sIdx].balls += 1; evtType = type as string; 
+        stats[sIdx].balls = (stats[sIdx].balls || 0) + 1; 
+        evtType = type as string; 
         desc = type === 'BYE' ? "Byes signaled." : "Leg byes given."; 
         if(bIdx !== -1) bowlStats[bIdx].bowlBalls = (bowlStats[bIdx].bowlBalls || 0) + 1;
     } else if (type === 'WICKET') {
         isWkt = true; faced = true; 
-        stats[sIdx].balls += 1; stats[sIdx].status = 'out'; wickets += 1; 
+        stats[sIdx].balls = (stats[sIdx].balls || 0) + 1; 
+        stats[sIdx].status = 'out'; 
+        wickets += 1; 
         stats[sIdx].dismissal = dismissalDesc || 'Out'; evtType = 'HOWZAT!'; 
         
-        if (stats[sIdx].runs === 0) duckType = stats[sIdx].balls === 1 ? 'golden' : 'regular';
+        if ((stats[sIdx].runs || 0) === 0) duckType = stats[sIdx].balls === 1 ? 'golden' : 'regular';
         
         if(duckType === 'golden') desc = "GOLDEN DUCK! First ball! Absolute disaster for the batter!";
         else if(duckType === 'regular') desc = "Gone for a DUCK! Fails to trouble the scorers today.";
-        else desc = `WICKET! ${sName} departs. ${dismissalDesc}`;
+        else {
+            let dT = dismissalDesc || "";
+            if(dT.startsWith('b ')) desc = OUT_PHRASES.BOWLED[Math.floor(Math.random()*OUT_PHRASES.BOWLED.length)];
+            else if(dT.startsWith('c ')) desc = OUT_PHRASES.CAUGHT[Math.floor(Math.random()*OUT_PHRASES.CAUGHT.length)];
+            else if(dT.startsWith('lbw')) desc = OUT_PHRASES.LBW[Math.floor(Math.random()*OUT_PHRASES.LBW.length)];
+            else if(dT.startsWith('st')) desc = OUT_PHRASES.STUMPED[Math.floor(Math.random()*OUT_PHRASES.STUMPED.length)];
+            else if(dT.toLowerCase().includes('run out')) desc = OUT_PHRASES.RUN_OUT[Math.floor(Math.random()*OUT_PHRASES.RUN_OUT.length)];
+            else desc = OUT_PHRASES.GENERIC[Math.floor(Math.random()*OUT_PHRASES.GENERIC.length)];
+            desc += ` (${dismissalDesc})`;
+        }
         
         if(bIdx !== -1) { 
-            bowlStats[bIdx].bowlBalls = (bowlStats[bIdx].bowlBalls || 0) + 1; 
-            if(!(dismissalDesc || "").includes('Run Out')) bowlStats[bIdx].bowlWkts = (bowlStats[bIdx].bowlWkts || 0) + 1; 
+            bowlStats[bIdx].bowlBalls = (bowlStats[bIdx].bowlBalls || 0) + 1;
+            if(!(dismissalDesc || '').includes('Run Out')) {
+                bowlStats[bIdx].bowlWkts = (bowlStats[bIdx].bowlWkts || 0) + 1; 
+            }
         }
+
+        // Set next striker if available
         const nIdx = stats.findIndex(p => p.status === 'waiting'); 
-        if(nIdx !== -1) { stats[nIdx].status = 'batting'; sName = stats[nIdx].name; } 
-        else sName = '';
+        if(nIdx !== -1) { 
+            stats[nIdx].status = 'batting'; 
+            sName = stats[nIdx].name; 
+        } else {
+            sName = ''; // All out or no batters left
+        }
     }
 
     score += runs; 
     
-    // Update Overs
     if (faced) { 
         let fl = Math.floor(over);
+        // Calculate balls: current decimal part * 10, round it, + 1
         let b = Math.round((over - fl) * 10) + 1; 
+        
         if (b >= 6) {
-           over = fl + 1; // Correctly roll over
+            over = fl + 0.6; // Mark as 6th ball finished (0.6 visually), technically over is done
         } else {
-           over = fl + (b * 0.1);
+            over = fl + (b * 0.1); 
         }
     }
 
-    // Strike Rotation (Odd runs)
+    // Swap strikers on odd runs (if not the end of an over triggered by runs)
     if (typeof type === 'number' && (type % 2 !== 0)) { 
         let t = sName; sName = nsName; nsName = t; 
     }
-
-    const newEvent: GameEvent = { 
-        type: evtType, 
-        player: isWkt ? stats[sIdx].name : match.currentStriker || '', 
-        time: `Ov ${Math.floor(over)}.${Math.round((over%1)*10)}`, 
-        desc: desc, 
-        duckType 
-    };
 
     await MatchesService.update(match.id, { 
         [statsKey]: stats, [bowlStatsKey]: bowlStats, 
@@ -221,45 +255,49 @@ export const CricketLogic = {
         [isHome?'homeWickets':'awayWickets']: wickets, 
         currentOver: parseFloat(over.toFixed(1)), 
         currentStriker: sName, currentNonStriker: nsName, 
-        events: [...(match.events || []), newEvent], 
+        events: [...(match.events || []), { type: evtType, player: isWkt ? (type === 'WICKET' ? stats[sIdx].name : '') : match.currentStriker, time: `Ov ${Math.floor(over)}.${Math.round((over%1)*10)}`, desc: desc, duckType: duckType }], 
         history: [...currentHistory, historySnapshot], 
+        lastUpdated: Date.now() 
     });
 
-    // Game Status Checks
-    const isOverComplete = Math.round((over % 1) * 10) === 0 && faced;
-    const maxOvers = match.maxOvers || 20;
-    const isOversDone = Math.floor(over) >= maxOvers;
-    const isAllOut = wickets >= 10;
-    const isInningsComplete = isAllOut || isOversDone;
+    // --- GAME STATE CHECKS ---
     
-    // Match Result Logic (2nd Innings)
+    // 1. Check if Over is Complete (x.6)
+    const isOverComplete = Math.round((over % 1) * 10) === 6;
+
+    // 2. Check Second Innings Status
     const isSecondInnings = (match.events || []).some(e => e.type === 'INNINGS BREAK');
+    const target = (isHome ? match.awayScore : match.homeScore) || 0;
+    
     let isMatchWon = false;
     let matchResultText = '';
 
     if (isSecondInnings) {
-        const target = isHome ? match.awayScore : match.homeScore;
-        
-        // Scenario A: Chasing team passes target
+        // Chasing Team Wins
         if (score > target) {
             isMatchWon = true;
-            const winner = isHome ? match.teamName : match.opponent;
             const wicketsLeft = 10 - wickets;
-            matchResultText = `${winner} won by ${wicketsLeft} wickets`;
-        } 
-        // Scenario B: Innings ends (All out or Overs done) and score <= target
-        else if (isInningsComplete) {
-            isMatchWon = true; 
+            matchResultText = `${isHome ? match.teamName : match.opponent} won by ${wicketsLeft} wickets`;
+        }
+        // Match Tied or Defending Team Wins (Triggered when innings ends via wickets or overs)
+        else if (wickets >= 10 || (isOverComplete && Math.floor(over) + 1 >= (match.maxOvers || 20))) {
             if (score === target) {
+                isMatchWon = true;
                 matchResultText = "Match Tied";
             } else {
-                const winner = isHome ? match.opponent : match.teamName;
-                const margin = target - score;
-                matchResultText = `${winner} won by ${margin} runs`;
+                isMatchWon = true;
+                const diff = target - score;
+                const winnerName = isHome ? match.opponent : match.teamName;
+                matchResultText = `${winnerName} won by ${diff} runs`;
             }
         }
     }
-    
+
+    // 3. Check Innings Complete (All Out or Max Overs)
+    const isAllOut = wickets >= 10;
+    const isMaxOversReached = isOverComplete && (Math.floor(over) + 1 >= (match.maxOvers || 20));
+    const isInningsComplete = isAllOut || isMaxOversReached;
+
     return {
         isOverComplete,
         isInningsComplete,
@@ -267,12 +305,5 @@ export const CricketLogic = {
         matchResultText,
         isSecondInnings
     };
-  },
-
-  undo: async (match: Match) => {
-    if(!match.history || match.history.length === 0) return;
-    const history = [...match.history];
-    const lastState = history.pop(); 
-    await MatchesService.update(match.id, { ...lastState, history });
   }
 };
