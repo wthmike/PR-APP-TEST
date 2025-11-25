@@ -27,7 +27,8 @@ export interface Match {
   opponent: string;
   status: MatchStatus;
   league?: string;
-  yearGroup?: string; // New field
+  yearGroup?: string;
+  sortOrder?: number; // For manual ordering
   lastUpdated: number;
   events: GameEvent[];
   

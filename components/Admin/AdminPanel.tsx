@@ -24,6 +24,9 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         return;
     }
     
+    // Default order to end of list
+    const maxOrder = matches.length; 
+
     const baseData: any = {
         sport,
         teamName: team,
@@ -32,6 +35,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         status: 'UPCOMING',
         league: 'School Fixture',
         lastUpdated: Date.now(),
+        sortOrder: maxOrder,
         homeScore: 0, homeWickets: 0, awayScore: 0, awayWickets: 0,
         events: []
     };
@@ -56,6 +60,20 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
           MatchesService.delete(deleteCandidateId);
           setDeleteCandidateId(null);
       }
+  };
+
+  const moveCard = async (index: number, direction: 'up' | 'down') => {
+      if ((direction === 'up' && index === 0) || (direction === 'down' && index === matches.length - 1)) return;
+      
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      const currentMatch = matches[index];
+      const targetMatch = matches[targetIndex];
+      
+      // We swap the indices. 
+      // Important: To prevent race conditions or weird states if sortOrder was previously undefined,
+      // we force them to adopt the swapped visual indices.
+      await MatchesService.update(currentMatch.id, { sortOrder: targetIndex });
+      await MatchesService.update(targetMatch.id, { sortOrder: index });
   };
 
   return (
@@ -140,19 +158,41 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
 
         {/* Match List */}
         <div className="p-4 md:p-8 bg-gray-50 flex flex-col gap-6 md:gap-8">
-            {matches.map(match => (
+            {matches.map((match, index) => (
                 <div key={match.id} className="bg-white border border-gray-200 p-4 md:p-6 relative shadow-sm">
+                    {/* Header Row */}
                     <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
-                        <div>
+                        <div className="flex-1">
                             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Editing</span>
                             <div className="flex items-center gap-2 mt-1">
                                 {match.yearGroup && <span className="bg-black text-white text-[9px] font-bold px-1.5 py-0.5">{match.yearGroup}</span>}
                                 <h4 className="font-display font-bold text-xl text-black uppercase leading-none">{match.teamName} <span className="text-gray-300">vs</span> {match.opponent}</h4>
                             </div>
                         </div>
-                        <button onClick={() => setDeleteCandidateId(match.id)} className="text-gray-300 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-sm">
-                            <i className="fa-solid fa-trash-can"></i>
-                        </button>
+                        
+                        {/* Control Buttons (Move / Delete) */}
+                        <div className="flex items-center gap-2">
+                             <div className="flex flex-col gap-1 mr-2">
+                                <button 
+                                    onClick={() => moveCard(index, 'up')} 
+                                    disabled={index === 0}
+                                    className="w-8 h-6 flex items-center justify-center bg-gray-100 hover:bg-black hover:text-white transition-colors disabled:opacity-20 disabled:hover:bg-gray-100 disabled:hover:text-black"
+                                >
+                                    <i className="fa-solid fa-chevron-up text-[10px]"></i>
+                                </button>
+                                <button 
+                                    onClick={() => moveCard(index, 'down')} 
+                                    disabled={index === matches.length - 1}
+                                    className="w-8 h-6 flex items-center justify-center bg-gray-100 hover:bg-black hover:text-white transition-colors disabled:opacity-20 disabled:hover:bg-gray-100 disabled:hover:text-black"
+                                >
+                                    <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                                </button>
+                             </div>
+                             <div className="w-px h-10 bg-gray-200 mx-2"></div>
+                             <button onClick={() => setDeleteCandidateId(match.id)} className="text-gray-300 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-sm">
+                                <i className="fa-solid fa-trash-can"></i>
+                             </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">

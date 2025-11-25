@@ -25,11 +25,17 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = db.collection('matches').onSnapshot((snapshot) => {
       const ms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
-      // Sort: Live first, then by Last Updated
+      // Sort Logic: Manual sortOrder first. 
+      // If sortOrder matches or is missing, fallback to stable ID sort to prevent jumping.
       ms.sort((a, b) => {
-        if (a.status === 'LIVE' && b.status !== 'LIVE') return -1;
-        if (a.status !== 'LIVE' && b.status === 'LIVE') return 1;
-        return (b.lastUpdated || 0) - (a.lastUpdated || 0);
+        const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        if (orderA !== orderB) return orderA - orderB;
+        
+        // Fallback for items without sortOrder:
+        // We do NOT use lastUpdated here to prevent jumping when editing.
+        // Use ID for stable sorting of unsorted items.
+        return a.id.localeCompare(b.id);
       });
       setMatches(ms);
       setLoading(false);
