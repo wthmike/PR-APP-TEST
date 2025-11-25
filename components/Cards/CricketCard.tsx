@@ -83,7 +83,10 @@ export const CricketCard = ({ match }: { match: Match }) => {
                 {isLive ? <Badge color="red">LIVE</Badge> : (isResult ? <Badge color="black">FT</Badge> : <Badge>UPCOMING</Badge>)}
                 <Badge color="navy">CRICKET</Badge>
             </div>
-            <div className="text-[10px] font-bold text-black uppercase tracking-wide">{match.league || 'Fixture'}</div>
+            <div className="text-[10px] font-bold text-black uppercase tracking-wide">
+              {match.league || 'Fixture'}
+              {match.maxOvers ? <span className="text-gray-400"> • {match.maxOvers} Overs</span> : ''}
+            </div>
         </div>
         <div className="p-3 flex flex-col justify-center items-end bg-gray-50/50">
            {isLive && <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Overs</div>}
@@ -179,7 +182,7 @@ export const CricketCard = ({ match }: { match: Match }) => {
 
          <div className="flex flex-col-reverse md:flex-row h-auto md:h-[400px]">
              {/* Feed (Left on Desktop) */}
-             <div className="w-full md:w-7/12 p-6 custom-scroll overflow-y-auto border-t md:border-t-0 md:border-r border-gray-100 bg-white">
+             <div className="w-full md:w-7/12 p-6 custom-scroll overflow-y-auto border-t md:border-t-0 md:border-r border-gray-100 bg-white h-80 md:h-auto">
                 {match.events?.length === 0 && <div className="text-center text-xs text-gray-300 font-bold uppercase tracking-widest mt-10">Match Starting Soon</div>}
                 {[...(match.events || [])].reverse().map((e, idx) => {
                      const isWicket = e.type === 'WICKET' || e.type === 'HOWZAT!';
