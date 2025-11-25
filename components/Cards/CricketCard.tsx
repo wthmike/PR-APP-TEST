@@ -126,15 +126,24 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
                      
                      <div className="mb-12">
                          <h1 className="font-display font-bold text-6xl uppercase mb-2 text-white tracking-tight">{teamName}</h1>
-                         <div className="flex items-baseline gap-8">
-                             <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter">
-                                 {score}<span className="text-gray-600">/</span>{wickets}
+                         <div className="flex items-start gap-12">
+                             <div className="flex flex-col">
+                                <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter mb-4">
+                                    {score}<span className="text-gray-600">/</span>{wickets}
+                                </div>
+                                <div className="flex items-center gap-4 pl-2">
+                                     <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Bowler</div>
+                                     <div className="h-4 w-px bg-gray-700"></div>
+                                     <div className="text-2xl font-display font-bold text-white uppercase">{match.currentBowler || '-'}</div>
+                                     <div className="font-mono text-2xl text-penrice-gold">{bowlerFigures}</div>
+                                </div>
                              </div>
-                             <div className="flex flex-col items-start gap-4">
-                                 <div className="text-4xl font-bold text-gray-500 uppercase tracking-widest">
-                                     Ov {match.currentOver?.toFixed(1)} <span className="text-2xl text-gray-700">/ {match.maxOvers || 20}</span>
+                             
+                             <div className="flex flex-col items-start gap-6 pt-8">
+                                 <div className="text-5xl font-bold text-gray-500 uppercase tracking-widest">
+                                     Ov {match.currentOver?.toFixed(1)} <span className="text-3xl text-gray-700">/ {match.maxOvers || 20}</span>
                                  </div>
-                                 <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-sm border-l-4 border-gray-600">
+                                 <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-6 py-4 rounded-sm border-l-4 border-gray-600">
                                      {isSecondInnings ? (
                                          <>
                                             <span className="text-gray-500 mr-2">Target {target} •</span>
@@ -169,14 +178,6 @@ export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: 
                                  {nonStrikerP?.runs || 0} <span className="text-xl text-gray-600">({nonStrikerP?.balls || 0})</span>
                              </div>
                          </div>
-                     </div>
-
-                     {/* Current Bowler */}
-                     <div className="mt-12 flex items-center gap-6 text-gray-400">
-                         <div className="text-sm font-bold uppercase tracking-widest">Current Bowler</div>
-                         <div className="h-px bg-gray-700 flex-1"></div>
-                         <div className="text-2xl font-display font-bold text-white uppercase">{match.currentBowler || '-'}</div>
-                         <div className="font-mono text-xl text-penrice-gold">{bowlerFigures}</div>
                      </div>
                  </div>
 
