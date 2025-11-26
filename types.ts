@@ -20,6 +20,15 @@ export interface PlayerStats {
   bowlWkts?: number;
 }
 
+export interface MatchReport {
+  title: string;
+  author: string;
+  body: string;
+  image?: string;
+  publishedAt: number;
+  tags?: string[];
+}
+
 export interface Match {
   id: string;
   sport: SportType;
@@ -36,6 +45,9 @@ export interface Match {
   homeTeamColor?: string;
   awayTeamColor?: string;
   
+  // News / Report
+  report?: MatchReport;
+
   // Netball Specific
   period?: string; // Q1, Q2, etc.
   periodIdx?: number;
