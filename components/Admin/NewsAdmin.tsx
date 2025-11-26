@@ -37,13 +37,19 @@ export const NewsAdmin = ({ matches }: { matches: Match[] }) => {
       if (m.sport === 'cricket') {
           // Find Top Scorers
           const allBatters = [...(m.homeTeamStats || []), ...(m.awayTeamStats || [])];
-          const topBatter = allBatters.reduce((prev, current) => (prev.runs > current.runs) ? prev : current, {name: '', runs: -1});
-          if (topBatter.runs > 0) f.push(`Top Scorer: ${topBatter.name} with ${topBatter.runs} runs`);
+          if (allBatters.length > 0) {
+              const topBatter = allBatters.reduce((prev, current) => (prev.runs > current.runs) ? prev : current);
+              if (topBatter.runs > 0) f.push(`Top Scorer: ${topBatter.name} with ${topBatter.runs} runs`);
 
-          // Find Best Bowlers
-          const allBowlers = allBatters.filter(p => (p.bowlWkts || 0) > 0);
-          const topBowler = allBowlers.reduce((prev, current) => ((prev.bowlWkts || 0) > (current.bowlWkts || 0)) ? prev : current, {name: '', bowlWkts: -1, bowlRuns: 0});
-          if (topBowler.bowlWkts > 0) f.push(`Best Bowler: ${topBowler.name} (${topBowler.bowlWkts}/${topBowler.bowlRuns})`);
+              // Find Best Bowlers
+              const allBowlers = allBatters.filter(p => (p.bowlWkts || 0) > 0);
+              if (allBowlers.length > 0) {
+                  const topBowler = allBowlers.reduce((prev, current) => ((prev.bowlWkts || 0) > (current.bowlWkts || 0)) ? prev : current);
+                  if ((topBowler.bowlWkts || 0) > 0) {
+                      f.push(`Best Bowler: ${topBowler.name} (${topBowler.bowlWkts}/${topBowler.bowlRuns})`);
+                  }
+              }
+          }
           
           if (m.events.some(e => e.duckType === 'golden')) f.push("Golden Duck alert! Someone had a shocker!");
       }

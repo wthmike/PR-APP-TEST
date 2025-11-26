@@ -8,11 +8,7 @@ export const Logo = ({ className = "h-20" }: { className?: string }) => {
     const [imgError, setImgError] = useState(false);
 
     if (imgError) {
-        return (
-            <div className={`${className} aspect-square flex items-center justify-center bg-penrice-navy rounded-xl border-4 border-penrice-gold shadow-lg`}>
-                 <span className="text-white font-display font-bold text-4xl leading-none mt-1">P</span>
-            </div>
-        );
+        return null;
     }
     
     return (
