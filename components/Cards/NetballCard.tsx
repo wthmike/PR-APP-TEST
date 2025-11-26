@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Match } from '../../types';
 import { Badge } from '../Shared';
 
-export const NetballCard = ({ match }: { match: Match }) => {
+export const NetballCard: React.FC<{ match: Match }> = ({ match }) => {
   const [expanded, setExpanded] = useState(false);
   const isLive = match.status === 'LIVE';
   const isResult = match.status === 'FT' || match.status === 'RESULT';

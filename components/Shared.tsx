@@ -4,7 +4,7 @@ export const LiveDot = () => (
   <div className="w-2 h-2 bg-red-600 animate-pulse inline-block mr-2" />
 );
 
-export const Badge = ({ children, color = 'gray' }: { children: React.ReactNode, color?: 'red' | 'black' | 'gray' | 'navy' }) => {
+export const Badge = ({ children, color = 'gray' }: { children?: React.ReactNode, color?: 'red' | 'black' | 'gray' | 'navy' }) => {
   const colors = {
     red: 'bg-red-600 text-white',
     black: 'bg-black text-white',
@@ -37,7 +37,7 @@ export const ScoreKey = ({ label, sub, color = 'white', onClick }: { label: stri
 
 interface ModalProps {
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onClose: () => void;
   type?: 'default' | 'danger';
 }

@@ -5,7 +5,6 @@ import { Badge } from '../Shared';
 import { Marquee } from '../Layout/Marquee';
 
 // --- Presentation Overlay Component ---
-// Defined outside to prevent re-mounting/animation loops on parent re-renders
 const CricketPresentationOverlay = ({ 
   match, 
   allMatches, 
@@ -17,185 +16,276 @@ const CricketPresentationOverlay = ({
   celebration: {type: string, text: string} | null,
   onClose: () => void 
 }) => {
-    const isPenriceBatting = match.penriceStatus === 'batting';
-    const battingStats = isPenriceBatting ? match.homeTeamStats : match.awayTeamStats;
-    const teamName = isPenriceBatting ? match.teamName : match.opponent;
-    const score = isPenriceBatting ? match.homeScore : match.awayScore;
-    const wickets = isPenriceBatting ? match.homeWickets : match.awayWickets;
+    // State for Scorecard Tab
+    const [activeTab, setActiveTab] = useState<'batting' | 'bowling'>('batting');
 
+    // Derived Data
+    const isPenriceBatting = match.penriceStatus === 'batting';
+    
+    // Identify Teams based on current innings status for "Batting" vs "Bowling" context
+    // Batting Team = The team currently at the crease
+    const battingTeamName = isPenriceBatting ? match.teamName : match.opponent;
+    const battingScore = isPenriceBatting ? match.homeScore : match.awayScore;
+    const battingWickets = isPenriceBatting ? match.homeWickets : match.awayWickets;
+    const battingStats = isPenriceBatting ? match.homeTeamStats : match.awayTeamStats;
+
+    // Bowling Team = The team in the field
     const bowlingTeamName = isPenriceBatting ? match.opponent : match.teamName;
     const bowlingScore = isPenriceBatting ? match.awayScore : match.homeScore;
     const bowlingWickets = isPenriceBatting ? match.awayWickets : match.homeWickets;
-    
-    const bowlingTeamStats = isPenriceBatting ? match.awayTeamStats : match.homeTeamStats;
-    
+    const bowlingStats = isPenriceBatting ? match.awayTeamStats : match.homeTeamStats;
+
+    // Resolve Data for the Sidebar based on Tab Selection
+    // Note: We map 'batting' tab to the CURRENT batting team, and 'bowling' to the CURRENT bowling team
+    // regardless of whether they are Home or Away.
+    const sidebarTeamName = activeTab === 'batting' ? battingTeamName : bowlingTeamName;
+    const sidebarStats = activeTab === 'batting' ? battingStats : bowlingStats;
+    const sidebarScore = activeTab === 'batting' ? `${battingScore}/${battingWickets}` : `${bowlingScore}/${bowlingWickets}`;
+
     const lastEvent = match.events?.[match.events.length - 1];
     
     const strikerP = battingStats?.find(p => p.name === match.currentStriker);
     const nonStrikerP = battingStats?.find(p => p.name === match.currentNonStriker);
-    const bowlerP = bowlingTeamStats?.find(p => p.name === match.currentBowler);
+    const bowlerP = bowlingStats?.find(p => p.name === match.currentBowler);
+    
     const bowlerOvers = bowlerP ? `${Math.floor((bowlerP.bowlBalls || 0) / 6)}.${(bowlerP.bowlBalls || 0) % 6}` : '0.0';
-    const bowlerFigures = bowlerP ? `${bowlerP.bowlWkts || 0}-${bowlerP.bowlRuns || 0} (${bowlerOvers})` : '';
+    const bowlerFigures = bowlerP ? `${bowlerP.bowlWkts || 0}-${bowlerP.bowlRuns || 0}` : '0-0';
 
     // Logic for Status (Chasing / Target)
     const isSecondInnings = (match.events || []).some(e => e.type === 'INNINGS BREAK');
     const target = (bowlingScore || 0) + 1;
-    const runsNeeded = target - (score || 0);
+    const runsNeeded = target - (battingScore || 0);
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-gray-900 text-white flex flex-col font-sans overflow-hidden h-screen w-screen">
+        <div className="fixed inset-0 z-[9999] bg-neutral-950 text-white flex flex-col font-sans overflow-hidden h-screen w-screen selection:bg-penrice-gold selection:text-black">
             {/* Celebration Overlay */}
             {celebration && (
-                <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-                    <div className="text-center animate-pop-in">
-                        <div className={`text-[15vw] font-display font-bold leading-none ${celebration.type === 'WICKET' || celebration.type === 'HOWZAT!' || celebration.text === 'DUCK!' ? 'text-red-600' : 'text-penrice-gold'} drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)]`}>
+                <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in">
+                    <div className="text-center animate-pop-in relative">
+                        {/* Decorative burst */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-penrice-gold/10 rounded-full blur-[100px] animate-pulse"></div>
+                        
+                        <div className={`relative text-[18vw] font-display font-bold leading-none italic uppercase tracking-tighter ${celebration.type === 'WICKET' || celebration.type === 'HOWZAT!' || celebration.text === 'DUCK!' ? 'text-red-600' : 'text-penrice-gold'} drop-shadow-[0_20px_20px_rgba(0,0,0,0.8)]`}>
                             {celebration.text}
                         </div>
-                        {celebration.type === '4' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Four Runs</div>}
-                        {celebration.type === '6' && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Six Runs</div>}
-                        {(celebration.type === 'WICKET' || celebration.type === 'HOWZAT!') && <div className="text-4xl font-bold text-white uppercase tracking-[1em] mt-4">Batter Dismissed</div>}
+                        {celebration.type === '4' && <div className="text-5xl font-display font-bold text-white uppercase tracking-[0.5em] mt-8 border-t border-white/20 pt-8">Boundary</div>}
+                        {celebration.type === '6' && <div className="text-5xl font-display font-bold text-white uppercase tracking-[0.5em] mt-8 border-t border-white/20 pt-8">Maximum</div>}
+                        {(celebration.type === 'WICKET' || celebration.type === 'HOWZAT!') && <div className="text-5xl font-display font-bold text-white uppercase tracking-[0.5em] mt-8 border-t border-white/20 pt-8">Wicket Down</div>}
                     </div>
                 </div>
             )}
 
-            {/* Header */}
-            <div className="h-16 bg-black border-b border-gray-800 flex justify-between items-center px-8 shrink-0">
-                <div className="flex items-center gap-4">
-                    <span className="text-penrice-gold font-display font-bold text-2xl uppercase tracking-wider">Penrice Match Centre</span>
-                    <div className="h-6 w-px bg-gray-700"></div>
-                    <span className="text-gray-400 font-bold uppercase tracking-widest text-sm">{match.yearGroup} • {match.league}</span>
+            {/* Top Bar */}
+            <div className="h-16 flex justify-between items-center px-8 border-b border-white/10 bg-black/40 backdrop-blur-sm shrink-0">
+                <div className="flex items-center gap-6">
+                     <div className="font-display font-bold text-penrice-gold text-2xl uppercase tracking-tighter leading-none">
+                        Match<span className="text-white">Centre</span>
+                     </div>
+                     <div className="h-8 w-px bg-white/10"></div>
+                     <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{match.yearGroup}</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-widest leading-none">{match.league}</span>
+                     </div>
                 </div>
-                <button onClick={onClose} className="text-gray-400 hover:text-white uppercase font-bold text-xs tracking-widest border border-gray-700 px-4 py-2 hover:bg-gray-800 rounded-sm transition-colors">
-                    Exit Fullscreen (ESC)
-                </button>
+                <div className="flex items-center gap-4">
+                     <div className="px-3 py-1 bg-red-600/20 border border-red-600/50 text-red-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 rounded-full">
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div> Live
+                     </div>
+                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-gray-400 transition-colors">
+                        <i className="fa-solid fa-xmark"></i>
+                     </button>
+                </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden pb-12">
-                {/* LEFT: Big Score & Current Play */}
-                <div className="w-2/3 p-12 flex flex-col justify-center border-r border-gray-800 relative bg-gradient-to-br from-gray-900 to-black">
-                    <div className="absolute top-8 left-8 text-penrice-gold font-bold uppercase tracking-[0.2em] text-lg">Batting Now</div>
+            {/* Main Layout */}
+            <div className="flex-1 flex overflow-hidden">
+                
+                {/* LEFT: Match Situation (Hero) */}
+                <div className="flex-[2] flex flex-col border-r border-white/10 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black relative">
+                    {/* Background Texture */}
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
                     
-                    <div className="mb-12">
-                        <h1 className="font-display font-bold text-6xl uppercase mb-2 text-white tracking-tight">{teamName}</h1>
-                        <div className="flex items-start gap-12">
-                            <div className="flex flex-col">
-                               <div className="font-display font-bold text-[12rem] leading-[0.85] text-white tracking-tighter mb-4">
-                                   {score}<span className="text-gray-600">/</span>{wickets}
-                               </div>
-                               <div className="flex items-center gap-4 pl-2">
-                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Bowler</div>
-                                    <div className="h-4 w-px bg-gray-700"></div>
-                                    <div className="text-2xl font-display font-bold text-white uppercase">{match.currentBowler || '-'}</div>
-                                    <div className="font-mono text-2xl text-penrice-gold">{bowlerFigures}</div>
-                               </div>
+                    <div className="flex-1 flex flex-col p-8 md:p-12 relative z-10">
+                        {/* Score Header */}
+                        <div className="flex justify-between items-start mb-12">
+                            <div>
+                                <div className="text-penrice-gold font-bold uppercase tracking-[0.3em] text-xs mb-2">Batting Innings</div>
+                                <h1 className="font-display font-bold text-7xl uppercase text-white tracking-tight leading-none mb-1">{battingTeamName}</h1>
+                                <div className="text-gray-500 font-bold uppercase tracking-wider text-sm">vs {bowlingTeamName}</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="font-display font-bold text-9xl text-white leading-[0.8] tracking-tighter">
+                                    {battingScore}<span className="text-gray-600 text-6xl align-top">/{battingWickets}</span>
+                                </div>
+                                <div className="text-4xl font-display font-bold text-gray-600 uppercase mt-2">
+                                    Ov {match.currentOver?.toFixed(1)} <span className="text-2xl text-gray-700">/ {match.maxOvers || 20}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Middle Section: Active Players Grid */}
+                        <div className="grid grid-cols-12 gap-8 mb-auto">
+                            {/* Striker Card */}
+                            <div className="col-span-5 bg-white/5 border border-white/10 p-6 rounded-lg backdrop-blur-sm relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-penrice-gold"></div>
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className="text-penrice-gold font-bold uppercase tracking-widest text-xs">On Strike</span>
+                                    <i className="fa-solid fa-baseball-bat-ball text-white/20 text-xl group-hover:scale-110 transition-transform"></i>
+                                </div>
+                                <div className="font-display font-bold text-4xl text-white truncate mb-1">{match.currentStriker || '-'}</div>
+                                <div className="font-mono text-3xl text-gray-400">
+                                    {strikerP?.runs || 0}<span className="text-lg text-gray-600 ml-1">({strikerP?.balls || 0})</span>
+                                </div>
+                            </div>
+
+                            {/* Non-Striker Card */}
+                            <div className="col-span-4 bg-white/5 border border-white/10 p-6 rounded-lg backdrop-blur-sm relative overflow-hidden">
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className="text-gray-500 font-bold uppercase tracking-widest text-xs">Non-Striker</span>
+                                </div>
+                                <div className="font-display font-bold text-3xl text-gray-300 truncate mb-1">{match.currentNonStriker || '-'}</div>
+                                <div className="font-mono text-2xl text-gray-500">
+                                    {nonStrikerP?.runs || 0}<span className="text-base text-gray-600 ml-1">({nonStrikerP?.balls || 0})</span>
+                                </div>
+                            </div>
+
+                            {/* Bowler Card */}
+                            <div className="col-span-3 bg-black/20 border border-white/5 p-6 rounded-lg flex flex-col justify-center">
+                                <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-2">Bowling</span>
+                                <div className="font-display font-bold text-xl text-white truncate leading-none mb-2">{match.currentBowler || '-'}</div>
+                                <div className="font-mono text-xl text-penrice-gold">{bowlerFigures} <span className="text-sm text-gray-600">({bowlerOvers})</span></div>
+                            </div>
+                        </div>
+
+                        {/* Match Status Footer */}
+                        <div className="mt-8 border-t border-white/10 pt-6 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white/5 rounded-full">
+                                    <i className="fa-solid fa-scale-balanced text-gray-400"></i>
+                                </div>
+                                <div>
+                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Match Equation</div>
+                                    <div className="text-xl font-display font-bold text-white uppercase tracking-wide">
+                                        {isSecondInnings ? (
+                                            <>Target {target} <span className="text-gray-600 mx-2">•</span> <span className="text-penrice-gold">Need {Math.max(0, runsNeeded)} to win</span></>
+                                        ) : (
+                                            <>1st Innings <span className="text-gray-600 mx-2">•</span> Setting Target</>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div className="flex flex-col items-start gap-6 pt-8">
-                                <div className="text-5xl font-bold text-gray-500 uppercase tracking-widest">
-                                    Ov {match.currentOver?.toFixed(1)} <span className="text-3xl text-gray-700">/ {match.maxOvers || 20}</span>
-                                </div>
-                                <div className="text-2xl font-bold text-gray-400 uppercase tracking-widest bg-white/5 px-6 py-4 rounded-sm border-l-4 border-gray-600">
-                                    {isSecondInnings ? (
-                                        <>
-                                           <span className="text-gray-500 mr-2">Target {target} •</span>
-                                           <span className="text-white">Need {Math.max(0, runsNeeded)} to win</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                           <span className="text-gray-500 mr-2">1st Innings •</span>
-                                           <span className="text-white">Setting Target</span>
-                                        </>
-                                    )}
+                            {/* Current Run Rate */}
+                            <div className="text-right">
+                                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Current Run Rate</div>
+                                <div className="text-2xl font-mono font-bold text-white">
+                                    {match.currentOver && match.currentOver > 0 ? (battingScore / match.currentOver).toFixed(2) : '0.00'}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-12">
-                        {/* Striker */}
-                        <div className="bg-gray-800/50 p-6 border-l-4 border-penrice-gold backdrop-blur-sm">
-                            <div className="text-gray-400 font-bold uppercase tracking-widest text-sm mb-2">Striker</div>
-                            <div className="text-4xl font-display font-bold text-white mb-1 truncate">{match.currentStriker || '-'}</div>
-                            <div className="text-3xl font-mono text-penrice-gold">
-                                {strikerP?.runs || 0} <span className="text-xl text-gray-500">({strikerP?.balls || 0})</span>
-                            </div>
-                        </div>
-                        
-                        {/* Non-Striker */}
-                        <div className="bg-gray-800/30 p-6 border-l-4 border-gray-600">
-                            <div className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-2">Non-Striker</div>
-                            <div className="text-4xl font-display font-bold text-gray-300 mb-1 truncate">{match.currentNonStriker || '-'}</div>
-                            <div className="text-3xl font-mono text-gray-400">
-                                {nonStrikerP?.runs || 0} <span className="text-xl text-gray-600">({nonStrikerP?.balls || 0})</span>
-                            </div>
-                        </div>
+                    {/* Footer: Commentary */}
+                    <div className="h-20 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center px-8 shrink-0">
+                         <div className="mr-8 flex items-center gap-3 border-r border-white/10 pr-8 h-full">
+                             <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Feed</span>
+                         </div>
+                         <div className="flex-1 overflow-hidden">
+                            {lastEvent ? (
+                                <div className="flex items-center gap-4 animate-fade-in-up">
+                                    <span className="font-mono text-penrice-gold font-bold text-lg">{lastEvent.time}</span>
+                                    <div className={`font-display font-bold text-2xl px-3 py-0.5 rounded-sm ${['WICKET','HOWZAT!'].includes(lastEvent.type) ? 'bg-red-600 text-white' : (['4','6'].includes(lastEvent.type) ? 'bg-white text-black' : 'bg-gray-800 text-gray-300')}`}>
+                                        {lastEvent.type}
+                                    </div>
+                                    <span className="text-white text-lg font-bold uppercase truncate opacity-90">{lastEvent.desc}</span>
+                                </div>
+                            ) : (
+                                <span className="text-gray-500 font-bold uppercase tracking-widest text-sm">Waiting for play to commence...</span>
+                            )}
+                         </div>
                     </div>
                 </div>
 
-                {/* RIGHT: Scorecard */}
-                <div className="w-1/3 bg-gray-900 flex flex-col border-l border-gray-800">
-                    <div className="p-6 bg-black border-b border-gray-800">
-                        <h3 className="text-white font-display font-bold text-xl uppercase tracking-wider">Scorecard</h3>
+                {/* RIGHT: Scorecard Sidebar */}
+                <div className="flex-1 flex flex-col bg-neutral-900 border-l border-white/5 w-1/3 min-w-[350px]">
+                    {/* Team Toggle Tabs */}
+                    <div className="flex border-b border-white/10">
+                        <button 
+                            onClick={() => setActiveTab('batting')}
+                            className={`flex-1 py-4 text-[10px] font-bold uppercase tracking-widest transition-colors ${activeTab === 'batting' ? 'bg-white/5 text-penrice-gold border-b-2 border-penrice-gold' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                        >
+                            {battingTeamName}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('bowling')}
+                            className={`flex-1 py-4 text-[10px] font-bold uppercase tracking-widest transition-colors ${activeTab === 'bowling' ? 'bg-white/5 text-penrice-gold border-b-2 border-penrice-gold' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                        >
+                            {bowlingTeamName}
+                        </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                        {battingStats?.map((p, i) => (
-                            <div key={i} className={`flex justify-between items-center pb-3 border-b border-gray-800 ${p.status === 'batting' ? 'opacity-100' : 'opacity-60'}`}>
-                                <div>
-                                    <div className={`font-bold text-lg ${p.status === 'batting' ? 'text-penrice-gold' : (p.status === 'out' ? 'text-red-500 line-through decoration-red-900/50' : 'text-white')}`}>
-                                        {p.name} {p.status === 'batting' && '*'}
+
+                    {/* Stats Header */}
+                    <div className="p-6 pb-2">
+                        <div className="flex justify-between items-end mb-4">
+                            <h3 className="font-display font-bold text-3xl text-white uppercase leading-none">{sidebarTeamName}</h3>
+                            <span className="font-mono text-xl text-gray-400">{sidebarScore}</span>
+                        </div>
+                        <div className="h-px w-full bg-white/10"></div>
+                    </div>
+
+                    {/* Scrollable List */}
+                    <div className="flex-1 overflow-y-auto custom-scroll p-6 pt-0 space-y-1">
+                        {!sidebarStats || sidebarStats.length === 0 ? (
+                            <div className="text-center py-12 text-gray-600 text-xs font-bold uppercase tracking-widest">No Data Available</div>
+                        ) : (
+                            sidebarStats.map((p, i) => {
+                                // Determining styling based on status
+                                const isCurrentBatting = p.status === 'batting';
+                                const isOut = p.status === 'out';
+                                const isNotOut = p.status === 'not out';
+                                const isYetToBat = p.status === 'waiting';
+
+                                return (
+                                    <div key={i} className={`flex items-center justify-between py-3 border-b border-white/5 group hover:bg-white/5 px-2 -mx-2 rounded-sm transition-colors ${isCurrentBatting ? 'bg-white/5' : ''}`}>
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`font-bold text-sm ${isCurrentBatting ? 'text-penrice-gold' : (isOut ? 'text-gray-500 line-through' : (isNotOut ? 'text-white' : 'text-gray-600'))}`}>
+                                                    {p.name}
+                                                </span>
+                                                {isCurrentBatting && <div className="w-1.5 h-1.5 bg-penrice-gold rounded-full animate-pulse"></div>}
+                                            </div>
+                                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                                                {p.dismissal || (isCurrentBatting ? 'Batting' : (isNotOut ? 'Not Out' : (isYetToBat ? '' : '')))}
+                                            </span>
+                                        </div>
+                                        <div className={`font-mono text-sm ${isYetToBat ? 'text-gray-700' : 'text-white font-bold'}`}>
+                                            {p.runs} <span className="text-gray-600 text-[10px] font-sans">({p.balls})</span>
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{p.dismissal || (p.status === 'batting' ? 'Batting' : (p.status === 'not out' ? 'Not Out' : 'Yet to Bat'))}</div>
-                                </div>
-                                <div className={`font-mono text-xl ${p.status === 'waiting' ? 'text-gray-700' : 'text-white'}`}>
-                                    {p.runs} <span className="text-sm text-gray-600">({p.balls})</span>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            })
+                        )}
+                        
+                        {/* Bowling Stats Section (if viewing bowling team tab, or at bottom of batting tab?) 
+                            Usually standard scorecard shows Batting Stats. 
+                            If we want to see bowling figures, they belong to the Opponent.
+                            Let's keep it simple: This list shows the BATTING stats for the selected team.
+                        */}
                     </div>
                 </div>
             </div>
 
-            {/* Footer Container */}
-            <div className="absolute bottom-0 left-0 right-0 z-50 flex flex-col">
-                {/* Commentary */}
-                <div className="h-24 bg-penrice-navy border-t-4 border-penrice-gold flex items-center px-8 relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-24 bg-penrice-gold flex items-center justify-center text-black font-bold text-2xl z-10 shadow-lg">
-                        <i className="fa-solid fa-microphone-lines"></i>
-                    </div>
-                    <div className="pl-24 w-full">
-                        {lastEvent ? (
-                            <div className="flex items-center gap-6 animate-fade-in-up">
-                                <span className="font-mono text-gray-400 font-bold text-lg">{lastEvent.time}</span>
-                                <div className="flex items-center gap-4">
-                                    {/* Score / Event Type Badge */}
-                                    <div className={`font-display font-bold text-3xl px-4 py-1 leading-none ${['WICKET','HOWZAT!'].includes(lastEvent.type) ? 'bg-red-600 text-white' : 'bg-white text-black'}`}>
-                                        {lastEvent.type}
-                                    </div>
-                                    <div className="text-white text-2xl font-bold uppercase truncate">
-                                        {lastEvent.desc}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <span className="text-gray-400 font-bold uppercase tracking-widest text-lg ml-8">Awaiting start of play...</span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Ticker - Bottom */}
-                {allMatches && (
-                    <div className="relative z-50">
-                       <Marquee matches={allMatches} />
-                    </div>
-                )}
+            {/* Bottom Ticker */}
+            <div className="relative z-50">
+                {allMatches && <Marquee matches={allMatches} />}
             </div>
         </div>
     );
 };
 
 // --- Main Cricket Card Component ---
-export const CricketCard = ({ match, allMatches }: { match: Match, allMatches?: Match[] }) => {
+export const CricketCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ match, allMatches }) => {
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'away'>('home');
   const [presentationMode, setPresentationMode] = useState(false);
