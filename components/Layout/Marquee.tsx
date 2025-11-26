@@ -26,19 +26,25 @@ export const Marquee = ({ matches }: { matches: Match[] }) => {
     };
 
     // Sport Icon/Text
-    const SportLabel = ({ sport }: { sport: string }) => (
-        <span className="font-display font-bold text-white uppercase tracking-wider mr-3 text-sm flex items-center">
-            <span className="mr-2 text-base">{sport.toLowerCase() === 'netball' ? '🏐' : '🏏'}</span>
-            {sport}
-        </span>
-    );
+    const SportLabel = ({ sport }: { sport: string }) => {
+        let icon = '🏏';
+        if (sport.toLowerCase() === 'netball') icon = '🏐';
+        if (sport.toLowerCase() === 'rugby') icon = '🏉';
+        
+        return (
+            <span className="font-display font-bold text-white uppercase tracking-wider mr-3 text-sm flex items-center">
+                <span className="mr-2 text-base">{icon}</span>
+                {sport}
+            </span>
+        );
+    };
 
-    if (m.sport === 'netball') {
-       const statusText = isLive ? (m.period || 'Q1') : 'FT';
+    if (m.sport === 'netball' || m.sport === 'rugby') {
+       const statusText = isLive ? (m.period || 'LIVE') : 'FT';
        return (
          <div className="flex items-center">
             <YearBadge year={m.yearGroup} />
-            <SportLabel sport="NETBALL" />
+            <SportLabel sport={m.sport.toUpperCase()} />
             <StatusBadge text={statusText} live={isLive} />
             
             <span className="font-display text-white text-lg font-bold tracking-wide">

@@ -1,4 +1,4 @@
-export type SportType = 'cricket' | 'netball';
+export type SportType = 'cricket' | 'netball' | 'rugby';
 export type MatchStatus = 'UPCOMING' | 'LIVE' | 'FT' | 'RESULT';
 
 export interface GameEvent {
@@ -11,9 +11,9 @@ export interface GameEvent {
 
 export interface PlayerStats {
   name: string;
-  runs: number;
+  runs: number; // Used as 'Points' in Rugby
   balls: number;
-  status: 'batting' | 'out' | 'waiting' | 'not out';
+  status: 'batting' | 'out' | 'waiting' | 'not out' | 'starting' | 'sub';
   dismissal: string;
   bowlBalls?: number;
   bowlRuns?: number;

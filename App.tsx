@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { db } from './services/firebase';
+import { db, auth } from './services/firebase';
 import { Match } from './types';
 import { Marquee } from './components/Layout/Marquee';
 import { CricketCard } from './components/Cards/CricketCard';
 import { NetballCard } from './components/Cards/NetballCard';
+import { RugbyCard } from './components/Cards/RugbyCard';
 import { AdminPanel } from './components/Admin/AdminPanel';
+import { Logo } from './components/Shared';
 
 export default function App() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -23,24 +25,47 @@ export default function App() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = db.collection('matches').onSnapshot((snapshot) => {
-      const ms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
-      // Sort Logic: Manual sortOrder first. 
-      // If sortOrder matches or is missing, fallback to stable ID sort to prevent jumping.
-      ms.sort((a, b) => {
-        const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
-        const orderB = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
-        if (orderA !== orderB) return orderA - orderB;
-        
-        // Fallback for items without sortOrder:
-        // We do NOT use lastUpdated here to prevent jumping when editing.
-        // Use ID for stable sorting of unsorted items.
-        return a.id.localeCompare(b.id);
-      });
-      setMatches(ms);
-      setLoading(false);
+    let unsubscribeSnapshot: (() => void) | null = null;
+
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+          // If not logged in, try to sign in anonymously to read data
+          try {
+              await auth.signInAnonymously();
+          } catch (err) {
+              console.error("Anonymous Auth Failed:", err);
+              setLoading(false);
+          }
+          return;
+      }
+
+      // User is authenticated, connect to DB
+      if (!unsubscribeSnapshot) {
+          unsubscribeSnapshot = db.collection('matches').onSnapshot((snapshot) => {
+            const ms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
+            // Sort Logic: Manual sortOrder first. 
+            // If sortOrder matches or is missing, fallback to stable ID sort to prevent jumping.
+            ms.sort((a, b) => {
+              const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+              const orderB = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+              if (orderA !== orderB) return orderA - orderB;
+              
+              // Fallback for items without sortOrder:
+              return a.id.localeCompare(b.id);
+            });
+            setMatches(ms);
+            setLoading(false);
+          }, (error) => {
+            console.error("Firestore Permission Error:", error);
+            setLoading(false);
+          });
+      }
     });
-    return () => unsubscribe();
+
+    return () => {
+        if (unsubscribeSnapshot) (unsubscribeSnapshot as () => void)();
+        unsubscribeAuth();
+    };
   }, []);
 
   const handleAppUnlock = (e: React.FormEvent) => {
@@ -65,6 +90,13 @@ export default function App() {
     }
   };
 
+  const getSportIcon = (sport: string) => {
+      if (sport === 'cricket') return '🏏';
+      if (sport === 'netball') return '🏐';
+      if (sport === 'rugby') return '🏉';
+      return '🏆';
+  };
+
   // --- VIEW 1: LOCK SCREEN ---
   if (isAppLocked) {
       return (
@@ -75,8 +107,8 @@ export default function App() {
 
             <div className="max-w-md w-full bg-white p-8 md:p-12 card-shadow-hard border-2 border-black z-10 opacity-0 animate-pop-in">
                 <div className="flex justify-center mb-8 opacity-0 animate-fade-in-down delay-200">
-                    <div className="bg-white p-2 rounded-lg">
-                        <img src="/pr-logo.png" alt="Penrice Logo" className="h-24 w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                    <div className="p-2 rounded-lg">
+                        <Logo className="h-24" />
                     </div>
                 </div>
                 <div className="opacity-0 animate-fade-in-up delay-300">
@@ -112,7 +144,9 @@ export default function App() {
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 font-sans">
              <div className="max-w-xl w-full">
                  <div className="text-center mb-10 opacity-0 animate-fade-in-down">
-                     <img src="/pr-logo.png" alt="Penrice Logo" className="h-20 w-auto mx-auto mb-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                     <div className="flex justify-center mb-6">
+                         <Logo className="h-24" />
+                     </div>
                      <span className="text-[10px] font-bold text-penrice-gold uppercase tracking-[0.3em] bg-black px-3 py-1 mb-4 inline-block">Official Hub</span>
                      <h2 className="text-5xl md:text-6xl font-display font-bold uppercase mb-2 tracking-tighter text-black leading-[0.9]">Welcome<br/>to Match Centre</h2>
                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Live Scores & Real-Time Updates</p>
@@ -132,7 +166,7 @@ export default function App() {
                                  <div key={m.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
                                      <div className="flex items-center gap-4">
                                          <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-lg">
-                                            {m.sport === 'netball' ? '🏐' : '🏏'}
+                                            {getSportIcon(m.sport)}
                                          </div>
                                          <div>
                                              <div className="text-xs font-bold text-black uppercase leading-tight">{m.teamName} <span className="text-gray-400 mx-1">vs</span> {m.opponent}</div>
@@ -220,11 +254,11 @@ export default function App() {
                     </div>
                  )}
 
-                 {matches.map(match => (
-                    match.sport === 'netball' 
-                      ? <NetballCard key={match.id} match={match} allMatches={matches} /> 
-                      : <CricketCard key={match.id} match={match} allMatches={matches} />
-                 ))}
+                 {matches.map(match => {
+                    if (match.sport === 'netball') return <NetballCard key={match.id} match={match} allMatches={matches} />;
+                    if (match.sport === 'rugby') return <RugbyCard key={match.id} match={match} allMatches={matches} />;
+                    return <CricketCard key={match.id} match={match} allMatches={matches} />;
+                 })}
              </div>
           )}
       </main>

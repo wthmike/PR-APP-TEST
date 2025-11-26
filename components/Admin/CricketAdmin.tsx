@@ -6,8 +6,11 @@ import { ScoreKey, ConfirmDialog, Modal } from '../Shared';
 
 export const CricketAdmin = ({ match }: { match: Match }) => {
   const [initMode, setInitMode] = useState(!match.homeTeamStats || match.homeTeamStats.length === 0);
-  const [homeList, setHomeList] = useState('');
-  const [awayList, setAwayList] = useState('');
+  
+  // Changed from string to array of strings for individual boxes
+  const [homePlayers, setHomePlayers] = useState<string[]>(Array(11).fill(''));
+  const [awayPlayers, setAwayPlayers] = useState<string[]>(Array(11).fill(''));
+  
   const [overs, setOvers] = useState(20);
   const [batFirst, setBatFirst] = useState<'penrice' | 'opponent'>('penrice');
   
@@ -23,31 +26,106 @@ export const CricketAdmin = ({ match }: { match: Match }) => {
   const [pendingResult, setPendingResult] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const updatePlayerName = (isHome: boolean, index: number, value: string) => {
+      if (isHome) {
+          const newPlayers = [...homePlayers];
+          newPlayers[index] = value;
+          setHomePlayers(newPlayers);
+      } else {
+          const newPlayers = [...awayPlayers];
+          newPlayers[index] = value;
+          setAwayPlayers(newPlayers);
+      }
+  };
+
+  const autoFillPlayers = (isHome: boolean) => {
+      const newNames = Array.from({length: 11}, (_, i) => `Player ${i + 1}`);
+      if (isHome) setHomePlayers(newNames);
+      else setAwayPlayers(newNames);
+  };
+
+  const handleSetupTeams = async () => {
+      // Filter out empty names and join with newlines to match existing logic signature
+      const homeListStr = homePlayers.filter(n => n.trim()).join('\n');
+      const awayListStr = awayPlayers.filter(n => n.trim()).join('\n');
+      
+      if (!homeListStr || !awayListStr) {
+          setErrorMsg("Please enter at least a few players for both teams.");
+          return;
+      }
+
+      await CricketLogic.setupTeams(match, homeListStr, awayListStr, batFirst, overs);
+      setInitMode(false);
+  };
+
   if (initMode) {
       return (
         <div className="bg-gray-50 p-4 border border-gray-200 rounded-sm">
-            <h5 className="text-xs font-bold text-black mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Initialize Teams</h5>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <textarea className="w-full h-32 text-xs p-3 border border-gray-300 rounded-sm focus:border-black outline-none" placeholder={`Enter ${match.teamName} Players (one per line)`} value={homeList} onChange={e => setHomeList(e.target.value)} />
-                <textarea className="w-full h-32 text-xs p-3 border border-gray-300 rounded-sm focus:border-black outline-none" placeholder={`Enter ${match.opponent} Players (one per line)`} value={awayList} onChange={e => setAwayList(e.target.value)} />
-            </div>
-            <div className="flex gap-4 mb-6">
-                <div className="w-24">
-                    <label className="text-[10px] font-bold block mb-1 uppercase text-gray-500">Overs</label>
-                    <input type="number" value={overs} onChange={e => setOvers(parseInt(e.target.value))} className="w-full border border-gray-300 p-2 text-sm font-bold rounded-sm" />
+            <h5 className="text-xs font-bold text-black mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Initialize Teams (11 Players)</h5>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                {/* Home Team Inputs */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <h6 className="text-[10px] font-bold text-penrice-navy uppercase">{match.teamName} Lineup</h6>
+                        <button onClick={() => autoFillPlayers(true)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
+                    </div>
+                    <div className="space-y-2">
+                        {homePlayers.map((player, idx) => (
+                            <div key={`h-${idx}`} className="flex items-center gap-2">
+                                <span className="text-[9px] font-mono text-gray-400 w-4">{idx + 1}.</span>
+                                <input 
+                                    className="w-full text-xs p-2 border border-gray-300 rounded-sm focus:border-black outline-none" 
+                                    placeholder={`Player ${idx + 1}`} 
+                                    value={player} 
+                                    onChange={e => updatePlayerName(true, idx, e.target.value)} 
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex-1 flex flex-col justify-center gap-2">
-                    <label className="text-xs font-bold flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={batFirst === 'penrice'} onChange={() => setBatFirst('penrice')} className="accent-black" /> 
-                        <span>{match.teamName} Bats 1st</span>
-                    </label>
-                    <label className="text-xs font-bold flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={batFirst === 'opponent'} onChange={() => setBatFirst('opponent')} className="accent-black" /> 
-                        <span>{match.opponent} Bats 1st</span>
-                    </label>
+
+                {/* Away Team Inputs */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <h6 className="text-[10px] font-bold text-black uppercase">{match.opponent} Lineup</h6>
+                        <button onClick={() => autoFillPlayers(false)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
+                    </div>
+                    <div className="space-y-2">
+                        {awayPlayers.map((player, idx) => (
+                            <div key={`a-${idx}`} className="flex items-center gap-2">
+                                <span className="text-[9px] font-mono text-gray-400 w-4">{idx + 1}.</span>
+                                <input 
+                                    className="w-full text-xs p-2 border border-gray-300 rounded-sm focus:border-black outline-none" 
+                                    placeholder={`Player ${idx + 1}`} 
+                                    value={player} 
+                                    onChange={e => updatePlayerName(false, idx, e.target.value)} 
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
-            <button onClick={async () => { await CricketLogic.setupTeams(match, homeList, awayList, batFirst, overs); setInitMode(false); }} className="w-full bg-black text-white font-bold py-3 text-xs uppercase tracking-widest hover:bg-penrice-gold hover:text-black transition-colors rounded-sm">Start Match</button>
+
+            <div className="bg-white p-4 border border-gray-200 mb-6">
+                <div className="flex gap-4 mb-4">
+                    <div className="w-24">
+                        <label className="text-[10px] font-bold block mb-1 uppercase text-gray-500">Overs</label>
+                        <input type="number" value={overs} onChange={e => setOvers(parseInt(e.target.value))} className="w-full border border-gray-300 p-2 text-sm font-bold rounded-sm" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center gap-2">
+                        <label className="text-xs font-bold flex items-center gap-2 cursor-pointer">
+                            <input type="radio" checked={batFirst === 'penrice'} onChange={() => setBatFirst('penrice')} className="accent-black" /> 
+                            <span>{match.teamName} Bats 1st</span>
+                        </label>
+                        <label className="text-xs font-bold flex items-center gap-2 cursor-pointer">
+                            <input type="radio" checked={batFirst === 'opponent'} onChange={() => setBatFirst('opponent')} className="accent-black" /> 
+                            <span>{match.opponent} Bats 1st</span>
+                        </label>
+                    </div>
+                </div>
+                <button onClick={handleSetupTeams} className="w-full bg-black text-white font-bold py-3 text-xs uppercase tracking-widest hover:bg-penrice-gold hover:text-black transition-colors rounded-sm">Start Match</button>
+            </div>
         </div>
       );
   }

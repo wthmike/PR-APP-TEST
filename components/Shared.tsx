@@ -1,8 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export const LiveDot = () => (
   <div className="w-2 h-2 bg-red-600 animate-pulse inline-block mr-2" />
 );
+
+export const Logo = ({ className = "h-20" }: { className?: string }) => {
+    const [imgError, setImgError] = useState(false);
+
+    if (imgError) {
+        return (
+            <div className={`${className} aspect-square flex items-center justify-center bg-penrice-navy rounded-xl border-4 border-penrice-gold shadow-lg`}>
+                 <span className="text-white font-display font-bold text-4xl leading-none mt-1">P</span>
+            </div>
+        );
+    }
+    
+    return (
+        <img 
+            src="/pr-logo.png"
+            alt="Penrice Logo" 
+            className={`${className} w-auto object-contain`}
+            onError={() => setImgError(true)}
+        />
+    )
+};
 
 export const Badge = ({ children, color = 'gray' }: { children?: React.ReactNode, color?: 'red' | 'black' | 'gray' | 'navy' }) => {
   const colors = {

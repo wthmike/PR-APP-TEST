@@ -3,6 +3,7 @@ import { MatchesService } from '../../services/firebase';
 import { Match, SportType } from '../../types';
 import { NetballAdmin } from './NetballAdmin';
 import { CricketAdmin } from './CricketAdmin';
+import { RugbyAdmin } from './RugbyAdmin';
 import { ConfirmDialog, Modal } from '../Shared';
 
 interface AdminPanelProps {
@@ -19,46 +20,73 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
   const [error, setError] = useState<string | null>(null);
 
   const createMatch = async () => {
-    if (!opponent) {
-        setError("Please enter an opponent name.");
-        return;
+    try {
+        if (!opponent) {
+            setError("Please enter an opponent name.");
+            return;
+        }
+        
+        // Default order to end of list
+        const maxOrder = matches.length; 
+
+        const baseData: any = {
+            sport,
+            teamName: team,
+            opponent: opponent,
+            yearGroup: yearGroup,
+            status: 'UPCOMING',
+            league: 'School Fixture',
+            lastUpdated: Date.now(),
+            sortOrder: maxOrder,
+            homeScore: 0, homeWickets: 0, awayScore: 0, awayWickets: 0,
+            events: []
+        };
+
+        if (sport === 'cricket') {
+            baseData.homeTeamStats = [];
+            baseData.awayTeamStats = [];
+            baseData.format = 'Limited Overs';
+            baseData.maxOvers = 20;
+        } else if (sport === 'rugby') {
+            baseData.format = 'Rugby Union';
+            baseData.period = '1st Half';
+            baseData.homeTeamStats = [];
+            baseData.awayTeamStats = [];
+        } else {
+            baseData.format = '4 Quarters';
+            baseData.period = 'Warmup';
+            baseData.periodIdx = -1;
+        }
+
+        await MatchesService.create(baseData);
+        setOpponent('');
+    } catch (err: any) {
+        console.error("Create Match Error:", err);
+        let msg = "Failed to create match.";
+        if (err.code === 'permission-denied') {
+            msg += " PERMISSION DENIED: Please update your Firestore Security Rules in the Firebase Console to 'allow read, write: if true;'";
+        } else {
+            msg += " " + (err.message || "Please check your connection.");
+        }
+        setError(msg);
     }
-    
-    // Default order to end of list
-    const maxOrder = matches.length; 
-
-    const baseData: any = {
-        sport,
-        teamName: team,
-        opponent: opponent,
-        yearGroup: yearGroup,
-        status: 'UPCOMING',
-        league: 'School Fixture',
-        lastUpdated: Date.now(),
-        sortOrder: maxOrder,
-        homeScore: 0, homeWickets: 0, awayScore: 0, awayWickets: 0,
-        events: []
-    };
-
-    if (sport === 'cricket') {
-        baseData.homeTeamStats = [];
-        baseData.awayTeamStats = [];
-        baseData.format = 'Limited Overs';
-        baseData.maxOvers = 20;
-    } else {
-        baseData.format = '4 Quarters';
-        baseData.period = 'Warmup';
-        baseData.periodIdx = -1;
-    }
-
-    await MatchesService.create(baseData);
-    setOpponent('');
   };
 
-  const handleDelete = () => {
-      if (deleteCandidateId) {
-          MatchesService.delete(deleteCandidateId);
-          setDeleteCandidateId(null);
+  const handleDelete = async () => {
+      try {
+          if (deleteCandidateId) {
+              await MatchesService.delete(deleteCandidateId);
+              setDeleteCandidateId(null);
+          }
+      } catch (err: any) {
+          console.error("Delete Match Error:", err);
+          let msg = "Failed to delete match.";
+          if (err.code === 'permission-denied') {
+              msg += " PERMISSION DENIED: Check Firestore Rules.";
+          } else {
+              msg += " " + err.message;
+          }
+          setError(msg);
       }
   };
 
@@ -69,18 +97,29 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
       const currentMatch = matches[index];
       const targetMatch = matches[targetIndex];
       
-      // We swap the indices. 
-      // Important: To prevent race conditions or weird states if sortOrder was previously undefined,
-      // we force them to adopt the swapped visual indices.
-      await MatchesService.update(currentMatch.id, { sortOrder: targetIndex });
-      await MatchesService.update(targetMatch.id, { sortOrder: index });
+      try {
+          await MatchesService.update(currentMatch.id, { sortOrder: targetIndex });
+          await MatchesService.update(targetMatch.id, { sortOrder: index });
+      } catch (err: any) {
+          console.error("Sort Error:", err);
+          setError("Failed to reorder matches. " + err.message);
+      }
+  };
+
+  const renderAdminComponent = (match: Match) => {
+      switch(match.sport) {
+          case 'cricket': return <CricketAdmin match={match} />;
+          case 'netball': return <NetballAdmin match={match} />;
+          case 'rugby': return <RugbyAdmin match={match} />;
+          default: return null;
+      }
   };
 
   return (
     <div className="mb-12 border border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-white animate-pulse-once relative">
         {/* Error Modal */}
         {error && (
-            <Modal title="Input Required" onClose={() => setError(null)} type="danger">
+            <Modal title="System Message" onClose={() => setError(null)} type="danger">
                  <p className="text-sm font-bold text-gray-600 mb-6">{error}</p>
                  <button onClick={() => setError(null)} className="w-full py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest">OK</button>
             </Modal>
@@ -98,7 +137,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
             />
         )}
 
-        {/* Header - Sticky for mobile ease */}
+        {/* Header */}
         <div className="bg-black text-white px-4 py-3 md:px-6 md:py-4 flex justify-between items-center sticky top-0 z-20 shadow-md">
             <h2 className="font-display font-bold text-lg md:text-xl uppercase tracking-wider">Staff Control Panel</h2>
             <button onClick={onClose} className="text-[10px] font-bold text-white/70 hover:text-white uppercase tracking-widest border border-white/30 px-3 py-1 hover:bg-white/10">
@@ -119,6 +158,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                     >
                         <option value="cricket">Cricket</option>
                         <option value="netball">Netball</option>
+                        <option value="rugby">Rugby</option>
                     </select>
                 </div>
                  <div>
@@ -227,7 +267,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                         </div>
                     </div>
 
-                    {match.sport === 'netball' ? <NetballAdmin match={match} /> : <CricketAdmin match={match} />}
+                    {renderAdminComponent(match)}
                 </div>
             ))}
         </div>
