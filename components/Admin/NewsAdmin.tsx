@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Match, MatchReport } from '../../types';
+import { Match, MatchReport, PlayerStats } from '../../types';
 import { MatchesService } from '../../services/firebase';
 import { ResultCard } from '../News/ResultCard';
 
@@ -44,9 +44,19 @@ export const NewsAdmin = ({ matches }: { matches: Match[] }) => {
               // Find Best Bowlers
               const allBowlers = allBatters.filter(p => (p.bowlWkts || 0) > 0);
               if (allBowlers.length > 0) {
-                  const topBowler = allBowlers.reduce((prev, current) => ((prev.bowlWkts || 0) > (current.bowlWkts || 0)) ? prev : current, allBowlers[0]);
-                  if ((topBowler.bowlWkts || 0) > 0) {
-                      f.push(`Best Bowler: ${topBowler.name} (${topBowler.bowlWkts || 0}/${topBowler.bowlRuns || 0})`);
+                  // Fix: Remove initial value to let TS infer PlayerStats type correctly from the array
+                  const topBowler = allBowlers.reduce((prev, current) => {
+                      const prevWkts = prev.bowlWkts || 0;
+                      const currWkts = current.bowlWkts || 0;
+                      return prevWkts > currWkts ? prev : current;
+                  });
+                  
+                  // Fix: Safe access
+                  const bestWkts = topBowler.bowlWkts || 0;
+                  const bestRuns = topBowler.bowlRuns || 0;
+                  
+                  if (bestWkts > 0) {
+                      f.push(`Best Bowler: ${topBowler.name} (${bestWkts}/${bestRuns})`);
                   }
               }
           }
