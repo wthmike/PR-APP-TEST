@@ -11,6 +11,10 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
   const [initMode, setInitMode] = useState(!match.homeTeamStats || match.homeTeamStats.length === 0);
   const [homePlayers, setHomePlayers] = useState<string[]>(Array(7).fill(''));
   const [awayPlayers, setAwayPlayers] = useState<string[]>(Array(7).fill(''));
+  
+  // Colors for Init Mode
+  const [homeColor, setHomeColor] = useState(match.homeTeamColor || '#000000');
+  const [awayColor, setAwayColor] = useState(match.awayTeamColor || '#ffffff');
 
   // Initialization Handlers
   const updatePlayerName = (isHome: boolean, index: number, value: string) => {
@@ -33,10 +37,18 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
 
   const handleSetup = async () => {
       try {
-        await NetballLogic.setupTeams(match, homePlayers, awayPlayers);
+        await NetballLogic.setupTeams(match, homePlayers, awayPlayers, homeColor, awayColor);
         setInitMode(false);
       } catch (err: any) {
         setError("Setup Failed: " + err.message);
+      }
+  };
+  
+  const handleColorUpdate = async (isHome: boolean, color: string) => {
+      if(isHome) setHomeColor(color); else setAwayColor(color);
+      // If live update needed immediately without saving everything:
+      if (!initMode) {
+          await NetballLogic.updateColors(match, isHome ? color : (match.homeTeamColor || '#000000'), !isHome ? color : (match.awayTeamColor || '#ffffff'));
       }
   };
 
@@ -124,9 +136,10 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
              <h5 className="text-xs font-bold text-black mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Netball Squad Setup</h5>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                  <div>
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-3 mb-2">
+                        <input type="color" value={homeColor} onChange={(e) => setHomeColor(e.target.value)} className="w-6 h-6 p-0 border-0 rounded cursor-pointer" />
                         <h6 className="text-[10px] font-bold text-penrice-navy uppercase">{match.teamName} Lineup</h6>
-                        <button onClick={() => autoFillPlayers(true)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
+                        <button onClick={() => autoFillPlayers(true)} className="text-[9px] font-bold text-gray-500 underline hover:text-black ml-auto">Auto-Fill</button>
                     </div>
                     <div className="space-y-1 mb-3">
                         {homePlayers.map((p, i) => (
@@ -146,9 +159,10 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
                     </button>
                  </div>
                  <div>
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-3 mb-2">
+                        <input type="color" value={awayColor} onChange={(e) => setAwayColor(e.target.value)} className="w-6 h-6 p-0 border-0 rounded cursor-pointer" />
                         <h6 className="text-[10px] font-bold text-black uppercase">{match.opponent} Lineup</h6>
-                        <button onClick={() => autoFillPlayers(false)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
+                        <button onClick={() => autoFillPlayers(false)} className="text-[9px] font-bold text-gray-500 underline hover:text-black ml-auto">Auto-Fill</button>
                     </div>
                      <div className="space-y-1 mb-3">
                         {awayPlayers.map((p, i) => (
@@ -194,7 +208,15 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
                 </div>
             )}
 
-            <div className="bg-white p-4 flex flex-col items-center gap-2">
+            <div className="bg-white p-4 flex flex-col items-center gap-2 relative group">
+                {/* Color Picker for Live Update */}
+                <input 
+                    type="color" 
+                    value={match.homeTeamColor || '#000000'} 
+                    onChange={(e) => handleColorUpdate(true, e.target.value)} 
+                    className="absolute top-2 left-2 w-4 h-4 p-0 border-0 opacity-20 group-hover:opacity-100 cursor-pointer"
+                    title="Change Team Color"
+                />
                 <div className="text-[10px] font-bold text-penrice-navy uppercase truncate w-full text-center">{match.teamName}</div>
                 <div className="font-display font-bold text-5xl">{match.homeScore}</div>
                 <div className="flex gap-2 w-full">
@@ -202,7 +224,14 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
                     <button onClick={() => updateScore('home', 1)} className="flex-[2] py-3 bg-penrice-navy text-white text-xs font-bold uppercase hover:bg-black transition-colors">+ Goal</button>
                 </div>
             </div>
-            <div className="bg-white p-4 flex flex-col items-center gap-2">
+            <div className="bg-white p-4 flex flex-col items-center gap-2 relative group">
+                <input 
+                    type="color" 
+                    value={match.awayTeamColor || '#ffffff'} 
+                    onChange={(e) => handleColorUpdate(false, e.target.value)} 
+                    className="absolute top-2 right-2 w-4 h-4 p-0 border-0 opacity-20 group-hover:opacity-100 cursor-pointer"
+                    title="Change Team Color"
+                />
                 <div className="text-[10px] font-bold text-gray-500 uppercase truncate w-full text-center">{match.opponent}</div>
                 <div className="font-display font-bold text-5xl">{match.awayScore}</div>
                 <div className="flex gap-2 w-full">

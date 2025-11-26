@@ -32,6 +32,10 @@ export interface Match {
   lastUpdated: number;
   events: GameEvent[];
   
+  // Custom Team Colors
+  homeTeamColor?: string;
+  awayTeamColor?: string;
+  
   // Netball Specific
   period?: string; // Q1, Q2, etc.
   periodIdx?: number;

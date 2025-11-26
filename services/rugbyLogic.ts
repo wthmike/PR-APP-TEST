@@ -2,7 +2,7 @@ import { Match, PlayerStats } from '../types';
 import { MatchesService } from './firebase';
 
 export const RugbyLogic = {
-    setupTeams: async (match: Match, homeList: string[], awayList: string[]) => {
+    setupTeams: async (match: Match, homeList: string[], awayList: string[], homeColor?: string, awayColor?: string) => {
         const createStats = (names: string[]): PlayerStats[] => {
             if (!names || !Array.isArray(names)) return [];
             return names.map((name, index) => ({ 
@@ -20,7 +20,9 @@ export const RugbyLogic = {
             homeScore: 0,
             awayScore: 0,
             period: '1st Half',
-            status: 'LIVE'
+            status: 'LIVE',
+            homeTeamColor: homeColor || '#000000',
+            awayTeamColor: awayColor || '#ffffff'
         });
     },
 
@@ -72,5 +74,12 @@ export const RugbyLogic = {
     
     manualCorrection: async (match: Match, homeScore: number, awayScore: number) => {
         await MatchesService.update(match.id, { homeScore, awayScore });
+    },
+
+    updateColors: async (match: Match, homeColor: string, awayColor: string) => {
+        await MatchesService.update(match.id, {
+            homeTeamColor: homeColor,
+            awayTeamColor: awayColor
+        });
     }
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Match } from '../../types';
-import { Badge } from '../Shared';
+import { Badge, getContrastYIQ } from '../Shared';
 import { Marquee } from '../Layout/Marquee';
 
 // --- Presentation Overlay Component ---
@@ -21,6 +21,9 @@ const NetballPresentationOverlay = ({
     const lastEvent = events[0];
 
     const isLive = match.status === 'LIVE';
+
+    const homeColor = match.homeTeamColor || '#000000';
+    const awayColor = match.awayTeamColor || '#ffffff';
 
     return (
         <div className="fixed inset-0 z-[9999] bg-neutral-950 text-white flex flex-col font-sans overflow-hidden h-screen w-screen selection:bg-penrice-gold selection:text-black">
@@ -85,18 +88,25 @@ const NetballPresentationOverlay = ({
                         <div className="absolute left-1/2 top-10 bottom-10 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
                         
                         {/* Home Team */}
-                        <div className="flex flex-col items-center justify-center p-8 text-center h-full">
-                            <h2 className="font-display font-bold text-5xl md:text-7xl uppercase text-white tracking-tight leading-none mb-4">{match.teamName}</h2>
-                            <div className="font-display font-bold text-[12rem] md:text-[16rem] text-white leading-[0.85] tracking-tighter drop-shadow-2xl">
-                                {match.homeScore}
-                            </div>
+                        <div className="flex flex-col items-center justify-center p-8 text-center h-full transition-colors duration-500" style={{ backgroundColor: homeColor }}>
+                             {/* Overlay to dim slightly for better white text visibility if needed, or rely on contrast */}
+                             <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
+                             <div className="relative z-10">
+                                <h2 className={`font-display font-bold text-5xl md:text-7xl uppercase tracking-tight leading-none mb-4 ${getContrastYIQ(homeColor) === 'white' ? 'text-white' : 'text-black'}`}>{match.teamName}</h2>
+                                <div className={`font-display font-bold text-[12rem] md:text-[16rem] leading-[0.85] tracking-tighter drop-shadow-2xl ${getContrastYIQ(homeColor) === 'white' ? 'text-white' : 'text-black'}`}>
+                                    {match.homeScore}
+                                </div>
+                             </div>
                         </div>
 
                         {/* Away Team */}
-                        <div className="flex flex-col items-center justify-center p-8 text-center h-full">
-                            <h2 className="font-display font-bold text-5xl md:text-7xl uppercase text-gray-400 tracking-tight leading-none mb-4">{match.opponent}</h2>
-                            <div className="font-display font-bold text-[12rem] md:text-[16rem] text-white leading-[0.85] tracking-tighter drop-shadow-2xl">
-                                {match.awayScore}
+                        <div className="flex flex-col items-center justify-center p-8 text-center h-full transition-colors duration-500" style={{ backgroundColor: awayColor }}>
+                            <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
+                            <div className="relative z-10">
+                                <h2 className={`font-display font-bold text-5xl md:text-7xl uppercase tracking-tight leading-none mb-4 ${getContrastYIQ(awayColor) === 'white' ? 'text-white' : 'text-black'}`}>{match.opponent}</h2>
+                                <div className={`font-display font-bold text-[12rem] md:text-[16rem] leading-[0.85] tracking-tighter drop-shadow-2xl ${getContrastYIQ(awayColor) === 'white' ? 'text-white' : 'text-black'}`}>
+                                    {match.awayScore}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -146,6 +156,13 @@ export const NetballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ 
 
   // Get last event for the ticker
   const lastEvent = match.events && match.events.length > 0 ? match.events[match.events.length - 1] : null;
+
+  // Colors with defaults (Penrice Black, Opponent White)
+  const homeColor = match.homeTeamColor || '#000000';
+  const awayColor = match.awayTeamColor || '#ffffff';
+  
+  const homeTextColor = getContrastYIQ(homeColor);
+  const awayTextColor = getContrastYIQ(awayColor);
 
   // Effect to trigger celebration for Goals
   useEffect(() => {
@@ -227,16 +244,16 @@ export const NetballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ 
       <div 
         className="cursor-pointer relative min-h-[180px] flex items-center overflow-hidden" 
         onClick={() => setExpanded(!expanded)}
-        style={{ background: 'linear-gradient(90deg, #002855 50%, #ffffff 50%)' }}
+        style={{ background: `linear-gradient(90deg, ${homeColor} 50%, ${awayColor} 50%)` }}
       >
-         {/* Home Team (Left, on Navy) */}
-         <div className="flex-1 flex flex-col items-center justify-center text-white p-4 pr-12 relative z-10">
+         {/* Home Team (Left) */}
+         <div className={`flex-1 flex flex-col items-center justify-center p-4 pr-12 relative z-10 ${homeTextColor === 'white' ? 'text-white' : 'text-black'}`}>
             <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-1 opacity-90 text-center">{match.teamName}</div>
             <div className="font-display font-bold text-8xl md:text-9xl tracking-tighter drop-shadow-xl">{match.homeScore}</div>
          </div>
 
-         {/* Away Team (Right, on White) */}
-         <div className="flex-1 flex flex-col items-center justify-center text-black p-4 pl-12 relative z-10">
+         {/* Away Team (Right) */}
+         <div className={`flex-1 flex flex-col items-center justify-center p-4 pl-12 relative z-10 ${awayTextColor === 'white' ? 'text-white' : 'text-black'}`}>
             <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-1 opacity-80 text-center">{match.opponent}</div>
             <div className="font-display font-bold text-8xl md:text-9xl tracking-tighter">{match.awayScore}</div>
          </div>
