@@ -1,13 +1,194 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Match } from '../../types';
 import { Badge } from '../Shared';
+import { Marquee } from '../Layout/Marquee';
 
-export const NetballCard: React.FC<{ match: Match }> = ({ match }) => {
+// --- Presentation Overlay Component ---
+const NetballPresentationOverlay = ({ 
+  match, 
+  allMatches, 
+  celebration, 
+  onClose 
+}: { 
+  match: Match, 
+  allMatches?: Match[], 
+  celebration: {type: string, text: string} | null,
+  onClose: () => void 
+}) => {
+    // Determine last event for feed
+    const events = [...(match.events || [])].reverse();
+    const lastEvent = events[0];
+
+    const isLive = match.status === 'LIVE';
+
+    return (
+        <div className="fixed inset-0 z-[9999] bg-neutral-950 text-white flex flex-col font-sans overflow-hidden h-screen w-screen selection:bg-penrice-gold selection:text-black">
+            {/* Celebration Overlay */}
+            {celebration && (
+                <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in">
+                    <div className="text-center animate-pop-in relative">
+                        {/* Decorative burst */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-penrice-gold/10 rounded-full blur-[80px] animate-pulse"></div>
+                        
+                        <div className="relative text-[15vw] font-display font-bold leading-none italic uppercase tracking-tighter text-penrice-gold drop-shadow-[0_20px_20px_rgba(0,0,0,0.8)]">
+                            {celebration.type}
+                        </div>
+                        <div className="text-4xl md:text-6xl font-display font-bold text-white uppercase tracking-[0.2em] mt-4 border-t border-white/20 pt-6">
+                            {celebration.text}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Top Bar */}
+            <div className="h-16 flex justify-between items-center px-8 border-b border-white/10 bg-black/40 backdrop-blur-sm shrink-0">
+                <div className="flex items-center gap-6">
+                     <div className="font-display font-bold text-penrice-gold text-2xl uppercase tracking-tighter leading-none">
+                        Match<span className="text-white">Centre</span>
+                     </div>
+                     <div className="h-8 w-px bg-white/10"></div>
+                     <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{match.yearGroup}</span>
+                        <span className="text-xs font-bold text-white uppercase tracking-widest leading-none">{match.league}</span>
+                     </div>
+                </div>
+                <div className="flex items-center gap-4">
+                     {isLive && (
+                         <div className="px-3 py-1 bg-red-600/20 border border-red-600/50 text-red-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div> Live
+                         </div>
+                     )}
+                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-gray-400 transition-colors">
+                        <i className="fa-solid fa-xmark"></i>
+                     </button>
+                </div>
+            </div>
+
+            {/* Main Layout */}
+            <div className="flex-1 flex overflow-hidden relative">
+                 {/* Background Texture */}
+                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+
+                 <div className="flex-1 flex flex-col relative z-10">
+                    {/* Period Indicator */}
+                    <div className="flex justify-center py-8">
+                        <div className="bg-white/5 border border-white/10 px-6 py-2 rounded-full backdrop-blur-sm">
+                            <span className="text-penrice-gold font-bold uppercase tracking-[0.3em] text-sm">
+                                {isLive ? (match.period || 'Q1') : 'Full Time'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Scores Split */}
+                    <div className="flex-1 grid grid-cols-2 gap-px items-center relative">
+                        <div className="absolute left-1/2 top-10 bottom-10 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                        
+                        {/* Home Team */}
+                        <div className="flex flex-col items-center justify-center p-8 text-center h-full">
+                            <h2 className="font-display font-bold text-5xl md:text-7xl uppercase text-white tracking-tight leading-none mb-4">{match.teamName}</h2>
+                            <div className="font-display font-bold text-[12rem] md:text-[16rem] text-white leading-[0.85] tracking-tighter drop-shadow-2xl">
+                                {match.homeScore}
+                            </div>
+                        </div>
+
+                        {/* Away Team */}
+                        <div className="flex flex-col items-center justify-center p-8 text-center h-full">
+                            <h2 className="font-display font-bold text-5xl md:text-7xl uppercase text-gray-400 tracking-tight leading-none mb-4">{match.opponent}</h2>
+                            <div className="font-display font-bold text-[12rem] md:text-[16rem] text-white leading-[0.85] tracking-tighter drop-shadow-2xl">
+                                {match.awayScore}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer: Feed */}
+                    <div className="h-24 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center px-8 shrink-0 mt-auto">
+                        <div className="mr-8 flex items-center gap-3 border-r border-white/10 pr-8 h-full">
+                             <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Feed</span>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                             {lastEvent ? (
+                                <div className="flex items-center gap-4 animate-fade-in-up">
+                                    <span className="font-mono text-penrice-gold font-bold text-lg">{lastEvent.time}</span>
+                                    <div className={`font-display font-bold text-2xl px-3 py-0.5 rounded-sm ${lastEvent.type === 'GOAL' ? 'bg-white text-black' : 'bg-gray-800 text-gray-300'}`}>
+                                        {lastEvent.type}
+                                    </div>
+                                    <span className="text-white text-lg font-bold uppercase truncate opacity-90">{lastEvent.desc}</span>
+                                </div>
+                            ) : (
+                                <span className="text-gray-500 font-bold uppercase tracking-widest text-sm">Waiting for first pass...</span>
+                            )}
+                        </div>
+                    </div>
+                 </div>
+            </div>
+
+            {/* Bottom Ticker */}
+            <div className="relative z-50">
+                {allMatches && <Marquee matches={allMatches} />}
+            </div>
+        </div>
+    );
+};
+
+
+export const NetballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ match, allMatches }) => {
   const [expanded, setExpanded] = useState(false);
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [celebration, setCelebration] = useState<{type: string, text: string} | null>(null);
+  
+  // Refs for tracking new events for animation
+  const lastEventCountRef = useRef(match.events?.length || 0);
+
   const isLive = match.status === 'LIVE';
   const isResult = match.status === 'FT' || match.status === 'RESULT';
 
+  // Effect to trigger celebration for Goals
+  useEffect(() => {
+      if (!match.events) return;
+      
+      if (match.events.length > lastEventCountRef.current) {
+          const latestEvent = match.events[match.events.length - 1];
+          
+          if (latestEvent.type === 'GOAL') {
+              // Extract team name from desc or logic if available, simplify for now
+              const isHomeGoal = latestEvent.player === match.teamName;
+              const team = isHomeGoal ? match.teamName : match.opponent;
+              
+              setCelebration({ type: 'GOAL', text: team });
+              
+              // Clear after 3 seconds
+              const timer = setTimeout(() => {
+                  setCelebration(null);
+              }, 3000);
+              return () => clearTimeout(timer);
+          }
+      }
+      lastEventCountRef.current = match.events.length;
+  }, [match.events, match.teamName, match.opponent]);
+
+  // Handle ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setPresentationMode(false);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
   return (
+    <>
+    {presentationMode && createPortal(
+        <NetballPresentationOverlay 
+            match={match} 
+            allMatches={allMatches} 
+            celebration={celebration} 
+            onClose={() => setPresentationMode(false)} 
+        />, 
+        document.body
+    )}
+    
     <div className={`w-full bg-white border border-gray-200 transition-all duration-300 relative z-10 ${expanded ? 'border-black card-shadow-hover z-50' : 'hover:border-black hover:card-shadow-hover'}`}>
       {/* Header */}
       <div 
@@ -22,9 +203,20 @@ export const NetballCard: React.FC<{ match: Match }> = ({ match }) => {
             </div>
             <div className="text-[10px] font-bold text-black uppercase tracking-wide">{match.league || 'Fixture'}</div>
         </div>
-        <div className="p-3 flex flex-col justify-center items-end bg-gray-50/50">
-           {isLive && <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Period</div>}
-           <div className="font-display font-bold text-xl text-black leading-none">{isLive ? match.period : (isResult ? 'FT' : '-')}</div>
+        <div className="p-3 flex items-center justify-end gap-4 bg-gray-50/50">
+           <div className="flex flex-col items-end">
+              {isLive && <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Period</div>}
+              <div className="font-display font-bold text-xl text-black leading-none">{isLive ? match.period : (isResult ? 'FT' : '-')}</div>
+           </div>
+
+           {/* Expand / Presentation Button - HIDDEN ON MOBILE */}
+           <button 
+                onClick={(e) => { e.stopPropagation(); setPresentationMode(true); }}
+                className="hidden md:flex w-8 h-8 rounded-full hover:bg-black hover:text-white items-center justify-center transition-colors text-gray-400 border border-gray-200"
+                title="Presentation Mode"
+           >
+               <i className="fa-solid fa-expand text-xs"></i>
+           </button>
         </div>
       </div>
 
@@ -77,5 +269,6 @@ export const NetballCard: React.FC<{ match: Match }> = ({ match }) => {
         <i className={`fa-solid fa-chevron-down text-[10px] text-gray-300 transition-transform ${expanded ? 'rotate-180' : ''}`}></i>
       </div>
     </div>
+    </>
   );
 };

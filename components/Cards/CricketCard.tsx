@@ -429,10 +429,10 @@ export const CricketCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ 
                <div className="font-display font-bold text-xl text-black leading-none">{match.currentOver?.toFixed(1) || '0.0'}</div>
            </div>
            
-           {/* Expand / Presentation Button */}
+           {/* Expand / Presentation Button - HIDDEN ON MOBILE */}
            <button 
                 onClick={(e) => { e.stopPropagation(); setPresentationMode(true); }}
-                className="w-8 h-8 rounded-full hover:bg-black hover:text-white flex items-center justify-center transition-colors text-gray-400 border border-gray-200"
+                className="hidden md:flex w-8 h-8 rounded-full hover:bg-black hover:text-white items-center justify-center transition-colors text-gray-400 border border-gray-200"
                 title="Presentation Mode"
            >
                <i className="fa-solid fa-expand text-xs"></i>
