@@ -44,16 +44,14 @@ export const NewsAdmin = ({ matches }: { matches: Match[] }) => {
               // Find Best Bowlers
               const allBowlers = allBatters.filter(p => (p.bowlWkts || 0) > 0);
               if (allBowlers.length > 0) {
-                  // Fix: Remove initial value to let TS infer PlayerStats type correctly from the array
                   const topBowler = allBowlers.reduce((prev, current) => {
                       const prevWkts = prev.bowlWkts || 0;
                       const currWkts = current.bowlWkts || 0;
                       return prevWkts > currWkts ? prev : current;
-                  });
+                  }, allBowlers[0]); // Initial value fixes TS2769
                   
-                  // Fix: Safe access
-                  const bestWkts = topBowler.bowlWkts || 0;
-                  const bestRuns = topBowler.bowlRuns || 0;
+                  const bestWkts = topBowler?.bowlWkts || 0; // Optional chaining fixes TS18048
+                  const bestRuns = topBowler?.bowlRuns || 0;
                   
                   if (bestWkts > 0) {
                       f.push(`Best Bowler: ${topBowler.name} (${bestWkts}/${bestRuns})`);

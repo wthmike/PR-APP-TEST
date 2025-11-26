@@ -146,132 +146,129 @@ export default function App() {
   if (showWelcome) {
       const liveMatches = matches.filter(m => m.status === 'LIVE');
       const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
-      const finishedMatches = matches.filter(m => m.status === 'FT' || m.status === 'RESULT');
       
+      // Sort upcoming by order if available
+      upcomingMatches.sort((a,b) => (a.sortOrder||99) - (b.sortOrder||99));
+      
+      const nextMatch = upcomingMatches[0];
+      const activeLiveMatch = liveMatches[0]; // Just take first live one for the hero
+
       return (
-        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+        <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden font-sans">
              {/* Dynamic Background */}
              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-             <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-penrice-navy/30 via-black to-black z-0"></div>
-             <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-penrice-gold rounded-full blur-[120px] opacity-10 animate-pulse"></div>
-
-             <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+             <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-penrice-navy/40 via-black to-black z-0"></div>
+             
+             {/* Content Container */}
+             <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 md:p-12">
                  
-                 {/* Left Column: Intro */}
-                 <div className="space-y-10 animate-fade-in-up">
-                      <div className="flex items-center gap-4 border-b border-white/10 pb-6">
-                           <Logo className="h-12 w-auto invert brightness-0" />
-                           <div className="h-8 w-px bg-white/20"></div>
-                           <div className="flex flex-col">
-                                <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400">Match Centre</span>
-                                <span className="font-display font-bold text-2xl uppercase tracking-tighter text-white leading-none">Version 2.0</span>
-                           </div>
-                      </div>
+                 <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                     
+                     {/* LEFT: Branding & Actions */}
+                     <div className="lg:col-span-5 space-y-10 animate-fade-in-up">
+                          <div className="border-l-4 border-penrice-gold pl-6 py-2">
+                               <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-penrice-gold mb-2">Penrice Academy</h2>
+                               <h1 className="text-6xl md:text-8xl font-display font-bold uppercase leading-[0.85] tracking-tighter">
+                                   Match<br/>Centre
+                               </h1>
+                          </div>
 
-                      <div>
-                          <h1 className="text-5xl md:text-7xl font-display font-bold uppercase leading-[0.9] tracking-tighter mb-6">
-                              Welcome to <br/>
-                              <span className="text-transparent bg-clip-text bg-gradient-to-r from-penrice-gold to-white">Mission Control</span>
-                          </h1>
-                          <p className="text-gray-400 text-lg leading-relaxed max-w-lg">
-                              Access real-time scoring, live match statistics, and post-game analysis for all Penrice Academy fixtures.
+                          <p className="text-gray-400 text-lg leading-relaxed max-w-md border-t border-white/10 pt-6">
+                              Real-time tracking for all Academy fixtures. View live scores, match statistics, and post-game reports.
                           </p>
-                      </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-4">
+                              <button 
+                                 onClick={() => setShowWelcome(false)}
+                                 className="group relative overflow-hidden bg-white text-black px-8 py-4 font-display font-bold uppercase text-lg tracking-wider hover:bg-penrice-gold transition-colors shadow-[8px_8px_0px_rgba(255,255,255,0.1)] hover:shadow-[8px_8px_0px_rgba(255,184,28,0.5)]"
+                              >
+                                  <span className="relative z-10">Launch Dashboard</span>
+                              </button>
+                          </div>
+                     </div>
 
-                      <div className="flex flex-col sm:flex-row gap-4">
-                          <button 
-                             onClick={() => setShowWelcome(false)}
-                             className="bg-white text-black px-10 py-4 font-display font-bold uppercase text-lg tracking-wider hover:bg-penrice-gold transition-colors shadow-[4px_4px_0px_rgba(255,255,255,0.2)] hover:shadow-[4px_4px_0px_rgba(255,184,28,1)] transform active:translate-y-0.5 active:shadow-none"
-                          >
-                              Enter Dashboard
-                          </button>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-8 pt-8 border-t border-white/10">
-                           <div>
-                               <div className="text-3xl font-display font-bold text-white mb-1">{liveMatches.length}</div>
-                               <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Live Now</div>
-                           </div>
-                           <div>
-                               <div className="text-3xl font-display font-bold text-white mb-1">{upcomingMatches.length}</div>
-                               <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Upcoming</div>
-                           </div>
-                           <div>
-                               <div className="text-3xl font-display font-bold text-white mb-1">{finishedMatches.length}</div>
-                               <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Results</div>
-                           </div>
-                      </div>
-                 </div>
-
-                 {/* Right Column: Live Overview Card */}
-                 <div className="relative animate-fade-in-up delay-200">
-                     <div className="absolute inset-0 bg-white/5 blur-xl -z-10 rounded-2xl"></div>
-                     <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl">
-                         <div className="bg-black/40 p-5 flex justify-between items-center border-b border-white/5">
-                             <span className="text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                                <i className="fa-solid fa-satellite-dish text-penrice-gold"></i> Live Feed
-                             </span>
-                             <div className="flex gap-1.5">
-                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
-                                 <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
-                                 <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
-                             </div>
-                         </div>
-                         
-                         <div className="p-0">
-                             {liveMatches.length > 0 ? (
-                                 <div className="divide-y divide-white/5">
-                                     {liveMatches.map(m => (
-                                         <div key={m.id} className="p-5 hover:bg-white/5 transition-colors group cursor-default">
-                                             <div className="flex justify-between items-start mb-3">
-                                                 <span className="px-2 py-0.5 bg-red-600/20 text-red-500 text-[9px] font-bold uppercase tracking-wider border border-red-600/30 rounded-sm flex items-center gap-1.5">
-                                                     <span className="w-1 h-1 bg-red-500 rounded-full animate-pulse"></span> Live
-                                                 </span>
-                                                 <span className="text-[10px] font-bold text-gray-500 uppercase">{m.sport}</span>
-                                             </div>
-                                             <div className="flex justify-between items-center">
-                                                 <div className="flex flex-col">
-                                                     <span className="text-xl font-display font-bold text-white uppercase leading-none mb-1">{m.teamName}</span>
-                                                     <span className="text-sm font-bold text-gray-400 uppercase leading-none">vs {m.opponent}</span>
-                                                 </div>
-                                                 <div className="text-2xl font-display font-bold text-penrice-gold">
-                                                     {m.homeScore}-{m.awayScore}
-                                                 </div>
-                                             </div>
-                                         </div>
-                                     ))}
-                                 </div>
-                             ) : (
-                                 <div className="p-8 text-center flex flex-col items-center justify-center min-h-[200px] border-b border-white/5">
-                                     <i className="fa-solid fa-bed text-gray-600 text-3xl mb-4"></i>
-                                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">No Active Matches</p>
-                                 </div>
-                             )}
+                     {/* RIGHT: Status Hero Card */}
+                     <div className="lg:col-span-7 w-full h-full flex items-center justify-center animate-fade-in-up delay-200">
+                         <div className="w-full max-w-lg bg-white/5 backdrop-blur-xl border border-white/10 p-1 rounded-2xl shadow-2xl relative overflow-hidden">
+                             {/* Glossy sheen */}
+                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                              
-                             {/* Next Up / Recent Section */}
-                             <div className="bg-black/20 p-5">
-                                 <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-3">
-                                     {upcomingMatches.length > 0 ? 'Next Up' : 'Recent Results'}
-                                 </div>
-                                 <div className="space-y-2">
-                                     {(upcomingMatches.length > 0 ? upcomingMatches.slice(0,3) : finishedMatches.slice(0,3)).map(m => (
-                                         <div key={m.id} className="flex items-center justify-between text-sm py-1">
-                                             <div className="flex items-center gap-3">
-                                                 <span className="text-base opacity-70">{getSportIcon(m.sport)}</span>
-                                                 <span className="font-bold text-gray-300 uppercase truncate max-w-[140px]">{m.opponent}</span>
-                                             </div>
-                                             <span className="text-[10px] font-mono text-gray-500">
-                                                 {m.status === 'UPCOMING' ? (m.yearGroup || 'TBA') : `${m.homeScore}-${m.awayScore}`}
-                                             </span>
-                                         </div>
-                                     ))}
-                                     {matches.length === 0 && <div className="text-[10px] text-gray-600 italic">No scheduled fixtures found.</div>}
-                                 </div>
+                             <div className="bg-black/40 rounded-xl p-8 h-full min-h-[300px] flex flex-col justify-between relative z-10">
+                                  
+                                  {/* Header */}
+                                  <div className="flex justify-between items-start mb-8">
+                                      <div className="flex items-center gap-2">
+                                           <div className={`w-2 h-2 rounded-full ${liveMatches.length > 0 ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></div>
+                                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                               {liveMatches.length > 0 ? 'Live Now' : 'System Online'}
+                                           </span>
+                                      </div>
+                                      <Logo className="h-8 invert opacity-50" />
+                                  </div>
+
+                                  {/* Main Content */}
+                                  <div className="flex-1 flex flex-col justify-center">
+                                      {activeLiveMatch ? (
+                                          <div>
+                                              <div className="text-[10px] font-bold text-penrice-gold uppercase tracking-widest mb-2 border-b border-white/10 pb-2 inline-block">
+                                                  In Progress • {activeLiveMatch.sport}
+                                              </div>
+                                              <div className="flex flex-col gap-1 mb-4">
+                                                  <div className="flex justify-between items-baseline">
+                                                      <span className="text-3xl font-display font-bold uppercase">{activeLiveMatch.teamName}</span>
+                                                      <span className="text-4xl font-display font-bold text-penrice-gold">{activeLiveMatch.homeScore}</span>
+                                                  </div>
+                                                  <div className="flex justify-between items-baseline opacity-60">
+                                                      <span className="text-2xl font-display font-bold uppercase">{activeLiveMatch.opponent}</span>
+                                                      <span className="text-3xl font-display font-bold">{activeLiveMatch.awayScore}</span>
+                                                  </div>
+                                              </div>
+                                              {activeLiveMatch.events?.length > 0 && (
+                                                  <div className="text-xs text-gray-400 font-mono mt-2">
+                                                      Last: {activeLiveMatch.events[activeLiveMatch.events.length-1].desc}
+                                                  </div>
+                                              )}
+                                          </div>
+                                      ) : (
+                                          nextMatch ? (
+                                              <div>
+                                                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">Next Fixture</span>
+                                                  <h3 className="text-3xl md:text-4xl font-display font-bold uppercase leading-none mb-2 text-white">
+                                                      {nextMatch.teamName} <span className="text-gray-600">vs</span><br/>
+                                                      {nextMatch.opponent}
+                                                  </h3>
+                                                  <div className="flex gap-3 mt-4">
+                                                      <span className="px-2 py-1 bg-white/10 text-xs font-bold uppercase rounded-sm">{nextMatch.sport}</span>
+                                                      <span className="px-2 py-1 bg-white/10 text-xs font-bold uppercase rounded-sm">{nextMatch.yearGroup}</span>
+                                                  </div>
+                                              </div>
+                                          ) : (
+                                              <div className="text-center py-8">
+                                                  <i className="fa-solid fa-check-circle text-4xl text-gray-700 mb-4"></i>
+                                                  <h3 className="text-xl font-display font-bold text-gray-500 uppercase">No Active Fixtures</h3>
+                                                  <p className="text-xs text-gray-600 mt-2">Check back later for match updates.</p>
+                                              </div>
+                                          )
+                                      )}
+                                  </div>
+
+                                  {/* Footer Stats */}
+                                  <div className="grid grid-cols-3 gap-4 pt-8 mt-8 border-t border-white/10">
+                                      <div>
+                                          <div className="text-2xl font-display font-bold text-white">{liveMatches.length}</div>
+                                          <div className="text-[9px] font-bold text-gray-500 uppercase">Live</div>
+                                      </div>
+                                      <div>
+                                          <div className="text-2xl font-display font-bold text-white">{upcomingMatches.length}</div>
+                                          <div className="text-[9px] font-bold text-gray-500 uppercase">Upcoming</div>
+                                      </div>
+                                      <div>
+                                          <div className="text-2xl font-display font-bold text-white">{matches.length}</div>
+                                          <div className="text-[9px] font-bold text-gray-500 uppercase">Total</div>
+                                      </div>
+                                  </div>
+
                              </div>
-                         </div>
-                         
-                         <div className="bg-black/40 p-3 text-center border-t border-white/5">
-                             <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Powered by HippoLive</span>
                          </div>
                      </div>
                  </div>
