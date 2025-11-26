@@ -12,12 +12,25 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
-  const [sport, setSport] = useState<SportType>('cricket');
+  const [activeTab, setActiveTab] = useState<SportType>('rugby');
   const [team, setTeam] = useState('Penrice Academy');
   const [opponent, setOpponent] = useState('');
   const [yearGroup, setYearGroup] = useState('Year 7');
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isReorderCollapsed, setIsReorderCollapsed] = useState(false);
+
+  // Filter matches for the current tab
+  const activeMatches = matches.filter(m => m.sport === activeTab);
+  
+  // Sorted matches for the order list (All active/upcoming matches)
+  // Sort Logic: explicit sortOrder > string ID comparison (stable fallback)
+  const orderedMatches = [...matches].sort((a, b) => {
+      const orderA = a.sortOrder ?? 9999;
+      const orderB = b.sortOrder ?? 9999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.id.localeCompare(b.id);
+  });
 
   const createMatch = async () => {
     try {
@@ -30,7 +43,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         const maxOrder = matches.length; 
 
         const baseData: any = {
-            sport,
+            sport: activeTab, // Auto-select based on tab
             teamName: team,
             opponent: opponent,
             yearGroup: yearGroup,
@@ -42,12 +55,12 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
             events: []
         };
 
-        if (sport === 'cricket') {
+        if (activeTab === 'cricket') {
             baseData.homeTeamStats = [];
             baseData.awayTeamStats = [];
             baseData.format = 'Limited Overs';
             baseData.maxOvers = 20;
-        } else if (sport === 'rugby') {
+        } else if (activeTab === 'rugby') {
             baseData.format = 'Rugby Union';
             baseData.period = '1st Half';
             baseData.homeTeamStats = [];
@@ -64,7 +77,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
         console.error("Create Match Error:", err);
         let msg = "Failed to create match.";
         if (err.code === 'permission-denied') {
-            msg += " PERMISSION DENIED: Please update your Firestore Security Rules in the Firebase Console to 'allow read, write: if true;'";
+            msg += " PERMISSION DENIED: Please update your Firestore Security Rules.";
         } else {
             msg += " " + (err.message || "Please check your connection.");
         }
@@ -79,30 +92,39 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
               setDeleteCandidateId(null);
           }
       } catch (err: any) {
-          console.error("Delete Match Error:", err);
-          let msg = "Failed to delete match.";
-          if (err.code === 'permission-denied') {
-              msg += " PERMISSION DENIED: Check Firestore Rules.";
-          } else {
-              msg += " " + err.message;
-          }
-          setError(msg);
+          setError("Failed to delete. " + err.message);
       }
   };
 
-  const moveCard = async (index: number, direction: 'up' | 'down') => {
-      if ((direction === 'up' && index === 0) || (direction === 'down' && index === matches.length - 1)) return;
+  const moveCard = async (matchId: string, direction: 'up' | 'down') => {
+      // 1. Get current visual list
+      const sorted = [...matches].sort((a, b) => {
+          const orderA = a.sortOrder ?? 9999;
+          const orderB = b.sortOrder ?? 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.id.localeCompare(b.id);
+      });
+
+      const index = sorted.findIndex(m => m.id === matchId);
       
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      const currentMatch = matches[index];
-      const targetMatch = matches[targetIndex];
+      if (index === -1) return;
+      if (direction === 'up' && index === 0) return;
+      if (direction === 'down' && index === sorted.length - 1) return;
       
+      // 2. Manipulate Array
+      const itemToMove = sorted[index];
+      sorted.splice(index, 1); // Remove
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      sorted.splice(newIndex, 0, itemToMove); // Insert
+      
+      // 3. Normalize ALL sort orders to secure the sequence (0, 1, 2, 3...)
+      // This fixes any "stuck" cards caused by duplicate or missing sortOrders
       try {
-          await MatchesService.update(currentMatch.id, { sortOrder: targetIndex });
-          await MatchesService.update(targetMatch.id, { sortOrder: index });
+          await Promise.all(sorted.map((m, idx) => 
+              MatchesService.update(m.id, { sortOrder: idx })
+          ));
       } catch (err: any) {
-          console.error("Sort Error:", err);
-          setError("Failed to reorder matches. " + err.message);
+          setError("Reorder failed: " + err.message);
       }
   };
 
@@ -116,7 +138,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
   };
 
   return (
-    <div className="mb-12 border border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-white animate-pulse-once relative">
+    <div className="mb-12 border-t border-black bg-gray-100 min-h-screen relative pb-20">
         {/* Error Modal */}
         {error && (
             <Modal title="System Message" onClose={() => setError(null)} type="danger">
@@ -125,149 +147,184 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
             </Modal>
         )}
 
-        {/* Modal for Deletion */}
+        {/* Delete Modal */}
         {deleteCandidateId && (
             <ConfirmDialog 
                 title="Delete Fixture" 
-                message="Are you sure you want to permanently delete this fixture? This action cannot be undone."
+                message="Are you sure you want to permanently delete this fixture?"
                 isDanger={true}
-                confirmText="Delete Match"
+                confirmText="Delete"
                 onCancel={() => setDeleteCandidateId(null)}
                 onConfirm={handleDelete}
             />
         )}
 
-        {/* Header */}
-        <div className="bg-black text-white px-4 py-3 md:px-6 md:py-4 flex justify-between items-center sticky top-0 z-20 shadow-md">
-            <h2 className="font-display font-bold text-lg md:text-xl uppercase tracking-wider">Staff Control Panel</h2>
-            <button onClick={onClose} className="text-[10px] font-bold text-white/70 hover:text-white uppercase tracking-widest border border-white/30 px-3 py-1 hover:bg-white/10">
-                Close
-            </button>
-        </div>
-
-        {/* Create Match */}
-        <div className="p-4 md:p-8 border-b border-gray-100">
-            <h3 className="text-[10px] font-bold text-black uppercase tracking-widest mb-4 md:mb-6 border-l-2 border-penrice-gold pl-3">Create New Fixture</h3>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 items-end">
-                <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Sport</label>
-                    <select 
-                        className="w-full border-b-2 border-gray-200 py-2 text-sm font-bold outline-none bg-transparent rounded-none"
-                        value={sport}
-                        onChange={(e) => setSport(e.target.value as SportType)}
-                    >
-                        <option value="cricket">Cricket</option>
-                        <option value="netball">Netball</option>
-                        <option value="rugby">Rugby</option>
-                    </select>
+        {/* --- SECTION 1: HEADER & GLOBAL ORDER --- */}
+        <div className="bg-white border-b border-gray-300 shadow-sm sticky top-0 z-40">
+            <div className="flex justify-between items-center px-4 py-3 bg-black text-white">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <h2 className="font-display font-bold text-lg uppercase tracking-wider">Admin Panel</h2>
                 </div>
-                 <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Year Group</label>
-                    <input 
-                        className="w-full border-b-2 border-gray-200 py-2 text-sm font-bold outline-none bg-transparent rounded-none"
-                        value={yearGroup}
-                        placeholder="e.g. Year 7"
-                        onChange={(e) => setYearGroup(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Our Team</label>
-                    <input 
-                        className="w-full border-b-2 border-gray-200 py-2 text-sm font-bold outline-none bg-transparent rounded-none"
-                        value={team}
-                        onChange={(e) => setTeam(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Opponent</label>
-                    <input 
-                        className="w-full border-b-2 border-gray-200 py-2 text-sm font-bold outline-none bg-transparent rounded-none"
-                        placeholder="School Name"
-                        value={opponent}
-                        onChange={(e) => setOpponent(e.target.value)}
-                    />
-                </div>
-                <button 
-                    onClick={createMatch}
-                    className="w-full py-3 bg-black hover:bg-penrice-gold hover:text-black text-white font-bold uppercase tracking-widest text-xs transition-colors border border-black"
-                >
-                    Create
+                <button onClick={onClose} className="text-[10px] font-bold text-white/70 hover:text-white uppercase tracking-widest bg-white/10 px-4 py-2 rounded-sm h-full">
+                    Close
                 </button>
+            </div>
+
+            {/* Collapsible Order Widget */}
+            <div className="bg-gray-50 border-b border-gray-200">
+                <div 
+                    className="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-100"
+                    onClick={() => setIsReorderCollapsed(!isReorderCollapsed)}
+                >
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center">
+                        <i className="fa-solid fa-sort mr-2 text-sm"></i> 
+                        Active Fixture Order
+                    </span>
+                    <i className={`fa-solid fa-chevron-down text-xs text-gray-400 transition-transform ${isReorderCollapsed ? '-rotate-90' : ''}`}></i>
+                </div>
+                
+                {!isReorderCollapsed && (
+                    <div className="px-2 pb-3 overflow-x-auto whitespace-nowrap custom-scroll flex gap-2">
+                        {orderedMatches.length === 0 && <div className="p-4 text-xs text-gray-400 italic">No matches created yet.</div>}
+                        {orderedMatches.map((m, idx) => (
+                            <div key={m.id} className="inline-flex flex-col w-40 bg-white border border-gray-200 shadow-sm rounded-sm p-2 shrink-0 relative">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-sm ${m.sport==='rugby'?'bg-penrice-navy text-white':(m.sport==='cricket'?'bg-green-700 text-white':'bg-pink-600 text-white')}`}>
+                                        {m.sport.substr(0,1)}
+                                    </span>
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={(e) => {e.stopPropagation(); moveCard(m.id, 'up')}}
+                                            disabled={idx === 0}
+                                            className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-black hover:text-white rounded-sm disabled:opacity-20 transition-colors"
+                                        >
+                                            <i className="fa-solid fa-caret-left text-xs"></i>
+                                        </button>
+                                        <button 
+                                            onClick={(e) => {e.stopPropagation(); moveCard(m.id, 'down')}}
+                                            disabled={idx === orderedMatches.length - 1}
+                                            className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-black hover:text-white rounded-sm disabled:opacity-20 transition-colors"
+                                        >
+                                            <i className="fa-solid fa-caret-right text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="text-[10px] font-bold text-black truncate leading-tight mt-1">{m.opponent}</div>
+                                <div className="text-[9px] text-gray-400 truncate">{m.yearGroup}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
 
-        {/* Match List */}
-        <div className="p-4 md:p-8 bg-gray-50 flex flex-col gap-6 md:gap-8">
-            {matches.map((match, index) => (
-                <div key={match.id} className="bg-white border border-gray-200 p-4 md:p-6 relative shadow-sm">
-                    {/* Header Row */}
-                    <div className="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
-                        <div className="flex-1">
-                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Editing</span>
-                            <div className="flex items-center gap-2 mt-1">
-                                {match.yearGroup && <span className="bg-black text-white text-[9px] font-bold px-1.5 py-0.5">{match.yearGroup}</span>}
-                                <h4 className="font-display font-bold text-xl text-black uppercase leading-none">{match.teamName} <span className="text-gray-300">vs</span> {match.opponent}</h4>
-                            </div>
-                        </div>
-                        
-                        {/* Control Buttons (Move / Delete) */}
+        {/* --- SECTION 2: SPORT TABS --- */}
+        <div className="sticky top-[98px] z-30 bg-white shadow-md grid grid-cols-3 border-b border-gray-300">
+             {(['rugby', 'netball', 'cricket'] as SportType[]).map(sport => (
+                 <button
+                    key={sport}
+                    onClick={() => setActiveTab(sport)}
+                    className={`h-16 flex flex-col items-center justify-center border-b-4 transition-all active:bg-gray-100 ${activeTab === sport ? 'border-black bg-gray-50' : 'border-transparent text-gray-400 hover:bg-gray-50'}`}
+                 >
+                     <span className="text-2xl mb-1 filter drop-shadow-sm">
+                        {sport === 'cricket' && '🏏'}
+                        {sport === 'rugby' && '🏉'}
+                        {sport === 'netball' && '🏐'}
+                     </span>
+                     <span className={`text-[10px] font-bold uppercase tracking-widest ${activeTab === sport ? 'text-black' : 'text-gray-400'}`}>
+                         {sport}
+                     </span>
+                 </button>
+             ))}
+        </div>
+
+        {/* --- SECTION 3: CREATE NEW (Context Aware) --- */}
+        <div className="p-4 bg-white border-b border-gray-200 md:border md:m-4 md:rounded-sm shadow-sm">
+             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                 <i className="fa-solid fa-plus-circle"></i>
+                 Create New {activeTab} Match
+             </h3>
+             <div className="flex flex-col gap-3">
+                 <div className="flex flex-col md:flex-row gap-3">
+                     <input 
+                         className="flex-1 border border-gray-200 p-3 h-12 text-sm font-bold outline-none focus:border-black rounded-sm bg-gray-50"
+                         placeholder="Year Group (e.g. Year 8)"
+                         value={yearGroup}
+                         onChange={(e) => setYearGroup(e.target.value)}
+                     />
+                     <input 
+                         className="flex-[2] border border-gray-200 p-3 h-12 text-sm font-bold outline-none focus:border-black rounded-sm bg-gray-50"
+                         value={team}
+                         onChange={(e) => setTeam(e.target.value)}
+                         placeholder="Home Team"
+                     />
+                 </div>
+                 <div className="flex flex-col md:flex-row gap-3">
+                     <input 
+                         className="flex-[2] border border-gray-200 p-3 h-12 text-sm font-bold outline-none focus:border-black rounded-sm bg-gray-50"
+                         placeholder="Opponent Name"
+                         value={opponent}
+                         onChange={(e) => setOpponent(e.target.value)}
+                     />
+                     <button 
+                         onClick={createMatch}
+                         className="flex-1 h-12 bg-black text-white font-bold uppercase tracking-widest text-[10px] rounded-sm hover:bg-penrice-gold hover:text-black transition-colors shadow-sm"
+                     >
+                         Create Match
+                     </button>
+                 </div>
+             </div>
+        </div>
+
+        {/* --- SECTION 4: MATCH LIST --- */}
+        <div className="flex flex-col gap-6 pb-12 md:px-4">
+            {activeMatches.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                    <i className="fa-solid fa-clipboard-list text-4xl mb-4 opacity-20"></i>
+                    <p className="text-xs font-bold uppercase tracking-widest">No {activeTab} matches found</p>
+                </div>
+            )}
+
+            {activeMatches.map((match) => (
+                <div key={match.id} className="bg-white border-y md:border border-gray-200 md:rounded-sm overflow-hidden animate-fade-in-up shadow-sm">
+                    {/* Card Header */}
+                    <div className="bg-gray-50 border-b border-gray-100 p-3 flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                             <div className="flex flex-col gap-1 mr-2">
-                                <button 
-                                    onClick={() => moveCard(index, 'up')} 
-                                    disabled={index === 0}
-                                    className="w-8 h-6 flex items-center justify-center bg-gray-100 hover:bg-black hover:text-white transition-colors disabled:opacity-20 disabled:hover:bg-gray-100 disabled:hover:text-black"
-                                >
-                                    <i className="fa-solid fa-chevron-up text-[10px]"></i>
-                                </button>
-                                <button 
-                                    onClick={() => moveCard(index, 'down')} 
-                                    disabled={index === matches.length - 1}
-                                    className="w-8 h-6 flex items-center justify-center bg-gray-100 hover:bg-black hover:text-white transition-colors disabled:opacity-20 disabled:hover:bg-gray-100 disabled:hover:text-black"
-                                >
-                                    <i className="fa-solid fa-chevron-down text-[10px]"></i>
-                                </button>
-                             </div>
-                             <div className="w-px h-10 bg-gray-200 mx-2"></div>
-                             <button onClick={() => setDeleteCandidateId(match.id)} className="text-gray-300 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-sm">
-                                <i className="fa-solid fa-trash-can"></i>
-                             </button>
+                            <span className="bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded-sm">{match.yearGroup || 'Fixture'}</span>
+                            <span className="font-display font-bold text-lg uppercase text-black leading-none truncate max-w-[200px]">{match.opponent}</span>
                         </div>
+                        <button 
+                            onClick={() => setDeleteCandidateId(match.id)}
+                            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                        >
+                            <i className="fa-solid fa-trash-can text-sm"></i>
+                        </button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
-                            <select 
-                                value={match.status} 
-                                onChange={(e) => MatchesService.update(match.id, { status: e.target.value })}
-                                className="w-full border border-gray-300 bg-white p-2 text-xs font-bold rounded-sm h-10"
-                            >
-                                <option value="UPCOMING">Upcoming</option>
-                                <option value="LIVE">Live</option>
-                                <option value="FT">Full Time</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">League</label>
-                            <input 
-                                value={match.league || ''} 
-                                onChange={(e) => MatchesService.update(match.id, { league: e.target.value })}
-                                className="w-full border border-gray-300 p-2 text-xs h-10 rounded-sm"
-                            />
-                        </div>
-                         <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Year Group</label>
-                            <input 
-                                value={match.yearGroup || ''} 
-                                onChange={(e) => MatchesService.update(match.id, { yearGroup: e.target.value })}
-                                className="w-full border border-gray-300 p-2 text-xs h-10 rounded-sm"
-                                placeholder="e.g. Year 7"
-                            />
-                        </div>
+                    {/* Quick Settings */}
+                    <div className="grid grid-cols-2 gap-px bg-gray-100 border-b border-gray-100">
+                        <select 
+                            value={match.status} 
+                            onChange={(e) => MatchesService.update(match.id, { status: e.target.value })}
+                            className="p-3 h-12 text-xs font-bold outline-none bg-white text-center appearance-none"
+                        >
+                            <option value="UPCOMING">Upcoming</option>
+                            <option value="LIVE">Live</option>
+                            <option value="FT">Full Time</option>
+                        </select>
+                        <input 
+                            value={match.league || ''}
+                            onChange={(e) => MatchesService.update(match.id, { league: e.target.value })}
+                            className="p-3 h-12 text-xs font-bold outline-none bg-white text-center placeholder-gray-300"
+                            placeholder="League / Info"
+                        />
                     </div>
 
-                    {renderAdminComponent(match)}
+                    {/* Sport Specific Admin */}
+                    <div className="p-3">
+                        {renderAdminComponent(match)}
+                    </div>
                 </div>
             ))}
         </div>

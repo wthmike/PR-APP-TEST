@@ -5,7 +5,7 @@ import { Modal } from '../Shared';
 
 export const RugbyAdmin = ({ match }: { match: Match }) => {
   // Use status to determine if we are in init mode. 
-  // If match is already LIVE/FT/RESULT, we skip init even if stats are empty (e.g. quick start).
+  // If match is already LIVE/FT/RESULT, we skip init even if stats are empty.
   const isMatchActive = match.status === 'LIVE' || match.status === 'FT' || match.status === 'RESULT';
   const [initMode, setInitMode] = useState(!isMatchActive);
   
@@ -13,10 +13,6 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
   const [homePlayers, setHomePlayers] = useState<string[]>(Array(15).fill(''));
   const [awayPlayers, setAwayPlayers] = useState<string[]>(Array(15).fill(''));
   
-  // Scoring State
-  const [subName, setSubName] = useState('');
-  const [showSubModal, setShowSubModal] = useState<'home' | 'away' | null>(null);
-
   // Scoring Modal State
   const [scoringModal, setScoringModal] = useState<{type: 'TRY'|'CON'|'PEN'|'DG', points: number, isHome: boolean} | null>(null);
   const [scoreTime, setScoreTime] = useState('');
@@ -31,9 +27,19 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
   };
 
   const autoFillPlayers = (isHome: boolean) => {
-      const newNames = Array.from({length: 15}, (_, i) => `Player ${i + 1}`);
+      // Auto-fill currently displayed slots
+      const count = isHome ? homePlayers.length : awayPlayers.length;
+      const newNames = Array.from({length: count}, (_, i) => `Player ${i + 1}`);
       if (isHome) setHomePlayers(newNames);
       else setAwayPlayers(newNames);
+  };
+
+  const addSubSlot = (isHome: boolean) => {
+      if (isHome) {
+          setHomePlayers([...homePlayers, '']);
+      } else {
+          setAwayPlayers([...awayPlayers, '']);
+      }
   };
 
   const handleSetup = async () => {
@@ -77,18 +83,6 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
       }
   };
 
-  const handleAddSub = async () => {
-      if (showSubModal && subName.trim()) {
-          try {
-             await RugbyLogic.addSubstitute(match, showSubModal === 'home', subName);
-             setSubName('');
-             setShowSubModal(null);
-          } catch (err: any) {
-             setError("Failed to add sub: " + err.message);
-          }
-      }
-  };
-
   if (initMode) {
       return (
           <div className="bg-gray-50 p-4 border border-gray-200 rounded-sm">
@@ -97,35 +91,51 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
                     <span className="block sm:inline">{error}</span>
                 </div>
              )}
-             <h5 className="text-xs font-bold text-black mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Rugby XV Setup</h5>
+             <h5 className="text-xs font-bold text-black mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Rugby XV Squad Setup</h5>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                  <div>
                     <div className="flex justify-between items-center mb-2">
-                        <h6 className="text-[10px] font-bold text-penrice-navy uppercase">{match.teamName} Lineup (1-15)</h6>
+                        <h6 className="text-[10px] font-bold text-penrice-navy uppercase">{match.teamName} Lineup</h6>
                         <button onClick={() => autoFillPlayers(true)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 mb-3">
                         {homePlayers.map((p, i) => (
                             <div key={i} className="flex gap-2 items-center">
-                                <span className="text-[9px] font-mono text-gray-400 w-4">{i+1}.</span>
-                                <input className="w-full p-1 text-xs border border-gray-300" placeholder="Player Name" value={p} onChange={e => updatePlayerName(true, i, e.target.value)} />
+                                <span className={`text-[9px] font-mono w-4 ${i >= 15 ? 'text-penrice-gold font-bold' : 'text-gray-400'}`}>{i+1}.</span>
+                                <input 
+                                    className="w-full p-1 text-xs border border-gray-300 focus:border-black outline-none" 
+                                    placeholder={i >= 15 ? "Substitute" : "Player Name"} 
+                                    value={p} 
+                                    onChange={e => updatePlayerName(true, i, e.target.value)} 
+                                />
                             </div>
                         ))}
                     </div>
+                    <button onClick={() => addSubSlot(true)} className="w-full py-2 bg-white border border-dashed border-gray-300 text-[10px] font-bold uppercase hover:border-black hover:bg-gray-50">
+                        <i className="fa-solid fa-plus mr-1"></i> Add Substitute
+                    </button>
                  </div>
                  <div>
                     <div className="flex justify-between items-center mb-2">
-                        <h6 className="text-[10px] font-bold text-black uppercase">{match.opponent} Lineup (1-15)</h6>
+                        <h6 className="text-[10px] font-bold text-black uppercase">{match.opponent} Lineup</h6>
                         <button onClick={() => autoFillPlayers(false)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
                     </div>
-                     <div className="space-y-1">
+                     <div className="space-y-1 mb-3">
                         {awayPlayers.map((p, i) => (
                             <div key={i} className="flex gap-2 items-center">
-                                <span className="text-[9px] font-mono text-gray-400 w-4">{i+1}.</span>
-                                <input className="w-full p-1 text-xs border border-gray-300" placeholder="Player Name" value={p} onChange={e => updatePlayerName(false, i, e.target.value)} />
+                                <span className={`text-[9px] font-mono w-4 ${i >= 15 ? 'text-penrice-gold font-bold' : 'text-gray-400'}`}>{i+1}.</span>
+                                <input 
+                                    className="w-full p-1 text-xs border border-gray-300 focus:border-black outline-none" 
+                                    placeholder={i >= 15 ? "Substitute" : "Player Name"} 
+                                    value={p} 
+                                    onChange={e => updatePlayerName(false, i, e.target.value)} 
+                                />
                             </div>
                         ))}
                     </div>
+                    <button onClick={() => addSubSlot(false)} className="w-full py-2 bg-white border border-dashed border-gray-300 text-[10px] font-bold uppercase hover:border-black hover:bg-gray-50">
+                        <i className="fa-solid fa-plus mr-1"></i> Add Substitute
+                    </button>
                  </div>
              </div>
              <button onClick={handleSetup} className="w-full bg-black text-white py-3 text-xs font-bold uppercase tracking-widest hover:bg-penrice-gold hover:text-black">Start Match</button>
@@ -142,20 +152,6 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
             <Modal title="Error" onClose={() => setError(null)} type="danger">
                  <p className="text-sm font-bold text-gray-600 mb-6">{error}</p>
                  <button onClick={() => setError(null)} className="w-full py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest">OK</button>
-            </Modal>
-        )}
-
-        {/* Sub Modal */}
-        {showSubModal && (
-            <Modal title={`Add Substitute: ${showSubModal === 'home' ? match.teamName : match.opponent}`} onClose={() => setShowSubModal(null)}>
-                <input 
-                    className="w-full border border-gray-300 p-3 mb-4 text-sm font-bold" 
-                    placeholder="Substitute Name" 
-                    value={subName} 
-                    onChange={e => setSubName(e.target.value)} 
-                    autoFocus
-                />
-                <button onClick={handleAddSub} className="w-full bg-black text-white py-3 font-bold uppercase tracking-widest text-xs">Confirm Sub</button>
             </Modal>
         )}
 
@@ -257,9 +253,6 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
                      <button onClick={() => initiateScore('PEN', 3, true)} className="bg-white border border-penrice-navy text-penrice-navy py-4 font-display font-bold text-lg hover:bg-gray-50 uppercase">Pen (3)</button>
                      <button onClick={() => initiateScore('DG', 3, true)} className="bg-white border border-penrice-navy text-penrice-navy py-4 font-display font-bold text-lg hover:bg-gray-50 uppercase">DG (3)</button>
                  </div>
-                 <button onClick={() => setShowSubModal('home')} className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase text-gray-500 hover:text-black border border-dashed border-gray-300 hover:border-black">
-                    <i className="fa-solid fa-plus"></i> Add Sub
-                 </button>
             </div>
 
             {/* Away Actions */}
@@ -271,9 +264,6 @@ export const RugbyAdmin = ({ match }: { match: Match }) => {
                      <button onClick={() => initiateScore('PEN', 3, false)} className="bg-white border border-black text-black py-4 font-display font-bold text-lg hover:bg-gray-50 uppercase">Pen (3)</button>
                      <button onClick={() => initiateScore('DG', 3, false)} className="bg-white border border-black text-black py-4 font-display font-bold text-lg hover:bg-gray-50 uppercase">DG (3)</button>
                  </div>
-                 <button onClick={() => setShowSubModal('away')} className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase text-gray-500 hover:text-black border border-dashed border-gray-300 hover:border-black">
-                    <i className="fa-solid fa-plus"></i> Add Sub
-                 </button>
             </div>
         </div>
     </div>

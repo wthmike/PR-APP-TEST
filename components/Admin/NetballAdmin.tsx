@@ -1,10 +1,44 @@
 import React, { useState } from 'react';
 import { Match } from '../../types';
 import { MatchesService } from '../../services/firebase';
+import { NetballLogic } from '../../services/netballLogic';
 import { Modal } from '../Shared';
 
 export const NetballAdmin = ({ match }: { match: Match }) => {
   const [error, setError] = useState<string | null>(null);
+
+  // Initialization State (Netball usually 7 starters)
+  const [initMode, setInitMode] = useState(!match.homeTeamStats || match.homeTeamStats.length === 0);
+  const [homePlayers, setHomePlayers] = useState<string[]>(Array(7).fill(''));
+  const [awayPlayers, setAwayPlayers] = useState<string[]>(Array(7).fill(''));
+
+  // Initialization Handlers
+  const updatePlayerName = (isHome: boolean, index: number, value: string) => {
+      const target = isHome ? [...homePlayers] : [...awayPlayers];
+      target[index] = value;
+      isHome ? setHomePlayers(target) : setAwayPlayers(target);
+  };
+
+  const autoFillPlayers = (isHome: boolean) => {
+      const count = isHome ? homePlayers.length : awayPlayers.length;
+      const newNames = Array.from({length: count}, (_, i) => `Player ${i + 1}`);
+      if (isHome) setHomePlayers(newNames);
+      else setAwayPlayers(newNames);
+  };
+
+  const addSubSlot = (isHome: boolean) => {
+      if (isHome) setHomePlayers([...homePlayers, '']);
+      else setAwayPlayers([...awayPlayers, '']);
+  };
+
+  const handleSetup = async () => {
+      try {
+        await NetballLogic.setupTeams(match, homePlayers, awayPlayers);
+        setInitMode(false);
+      } catch (err: any) {
+        setError("Setup Failed: " + err.message);
+      }
+  };
 
   // Game Flow Definition
   const PERIODS = [
@@ -78,6 +112,66 @@ export const NetballAdmin = ({ match }: { match: Match }) => {
     
     await MatchesService.update(match.id, updates);
   };
+
+  if (initMode) {
+      return (
+          <div className="bg-gray-50 p-4 border border-gray-200 rounded-sm">
+             {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span className="block sm:inline">{error}</span>
+                </div>
+             )}
+             <h5 className="text-xs font-bold text-black mb-4 uppercase tracking-widest border-b border-gray-200 pb-2">Netball Squad Setup</h5>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                 <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <h6 className="text-[10px] font-bold text-penrice-navy uppercase">{match.teamName} Lineup</h6>
+                        <button onClick={() => autoFillPlayers(true)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
+                    </div>
+                    <div className="space-y-1 mb-3">
+                        {homePlayers.map((p, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <span className={`text-[9px] font-mono w-4 ${i >= 7 ? 'text-penrice-gold font-bold' : 'text-gray-400'}`}>{i+1}.</span>
+                                <input 
+                                    className="w-full p-1 text-xs border border-gray-300 focus:border-black outline-none" 
+                                    placeholder={i >= 7 ? "Substitute" : "Player Name"} 
+                                    value={p} 
+                                    onChange={e => updatePlayerName(true, i, e.target.value)} 
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => addSubSlot(true)} className="w-full py-2 bg-white border border-dashed border-gray-300 text-[10px] font-bold uppercase hover:border-black hover:bg-gray-50">
+                        <i className="fa-solid fa-plus mr-1"></i> Add Substitute
+                    </button>
+                 </div>
+                 <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <h6 className="text-[10px] font-bold text-black uppercase">{match.opponent} Lineup</h6>
+                        <button onClick={() => autoFillPlayers(false)} className="text-[9px] font-bold text-gray-500 underline hover:text-black">Auto-Fill</button>
+                    </div>
+                     <div className="space-y-1 mb-3">
+                        {awayPlayers.map((p, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <span className={`text-[9px] font-mono w-4 ${i >= 7 ? 'text-penrice-gold font-bold' : 'text-gray-400'}`}>{i+1}.</span>
+                                <input 
+                                    className="w-full p-1 text-xs border border-gray-300 focus:border-black outline-none" 
+                                    placeholder={i >= 7 ? "Substitute" : "Player Name"} 
+                                    value={p} 
+                                    onChange={e => updatePlayerName(false, i, e.target.value)} 
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => addSubSlot(false)} className="w-full py-2 bg-white border border-dashed border-gray-300 text-[10px] font-bold uppercase hover:border-black hover:bg-gray-50">
+                        <i className="fa-solid fa-plus mr-1"></i> Add Substitute
+                    </button>
+                 </div>
+             </div>
+             <button onClick={handleSetup} className="w-full bg-black text-white py-3 text-xs font-bold uppercase tracking-widest hover:bg-penrice-gold hover:text-black">Confirm Squad</button>
+          </div>
+      );
+  }
 
   return (
     <div>

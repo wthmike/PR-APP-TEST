@@ -5,8 +5,12 @@ export const RugbyLogic = {
     setupTeams: async (match: Match, homeList: string[], awayList: string[]) => {
         const createStats = (names: string[]): PlayerStats[] => {
             if (!names || !Array.isArray(names)) return [];
-            return names.map(name => ({ 
-                name, runs: 0, balls: 0, status: 'starting' as const, dismissal: '' 
+            return names.map((name, index) => ({ 
+                name, 
+                runs: 0, 
+                balls: 0, 
+                status: (index < 15 ? 'starting' : 'sub') as PlayerStats['status'], // First 15 are starters
+                dismissal: '' 
             })).filter(p => p.name && p.name.trim() !== '');
         };
 
@@ -17,21 +21,6 @@ export const RugbyLogic = {
             awayScore: 0,
             period: '1st Half',
             status: 'LIVE'
-        });
-    },
-
-    addSubstitute: async (match: Match, isHome: boolean, name: string) => {
-        if (!name.trim()) return;
-        
-        const statsKey = isHome ? 'homeTeamStats' : 'awayTeamStats';
-        const currentStats = (isHome ? match.homeTeamStats : match.awayTeamStats) || [];
-        
-        const newPlayer: PlayerStats = {
-            name, runs: 0, balls: 0, status: 'sub', dismissal: ''
-        };
-
-        await MatchesService.update(match.id, {
-            [statsKey]: [...currentStats, newPlayer]
         });
     },
 
