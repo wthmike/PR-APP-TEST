@@ -38,15 +38,15 @@ export const NewsAdmin = ({ matches }: { matches: Match[] }) => {
           // Find Top Scorers
           const allBatters = [...(m.homeTeamStats || []), ...(m.awayTeamStats || [])];
           if (allBatters.length > 0) {
-              const topBatter = allBatters.reduce((prev, current) => (prev.runs > current.runs) ? prev : current);
+              const topBatter = allBatters.reduce((prev, current) => (prev.runs > current.runs) ? prev : current, allBatters[0]);
               if (topBatter.runs > 0) f.push(`Top Scorer: ${topBatter.name} with ${topBatter.runs} runs`);
 
               // Find Best Bowlers
               const allBowlers = allBatters.filter(p => (p.bowlWkts || 0) > 0);
               if (allBowlers.length > 0) {
-                  const topBowler = allBowlers.reduce((prev, current) => ((prev.bowlWkts || 0) > (current.bowlWkts || 0)) ? prev : current);
+                  const topBowler = allBowlers.reduce((prev, current) => ((prev.bowlWkts || 0) > (current.bowlWkts || 0)) ? prev : current, allBowlers[0]);
                   if ((topBowler.bowlWkts || 0) > 0) {
-                      f.push(`Best Bowler: ${topBowler.name} (${topBowler.bowlWkts}/${topBowler.bowlRuns})`);
+                      f.push(`Best Bowler: ${topBowler.name} (${topBowler.bowlWkts || 0}/${topBowler.bowlRuns || 0})`);
                   }
               }
           }
@@ -280,7 +280,7 @@ export const NewsAdmin = ({ matches }: { matches: Match[] }) => {
                         <i className="fa-solid fa-lightbulb text-penrice-navy"></i>
                         <h3 className="text-xs font-bold text-penrice-navy uppercase tracking-widest">Match Facts & Prompts</h3>
                     </div>
-                    <p className="text-[10px] text-gray-500 mb-4">Click to insert into article.</p>
+                    <p className="text-xs text-gray-500 mb-4">Click to insert into article.</p>
                     
                     <div className="space-y-2">
                         {facts.length === 0 && <span className="text-xs text-gray-400 italic">No specific highlights found.</span>}

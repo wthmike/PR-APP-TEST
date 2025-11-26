@@ -144,155 +144,162 @@ export default function App() {
 
   // --- VIEW 2: WELCOME / ONBOARDING ---
   if (showWelcome) {
-      const liveCount = matches.filter(m => m.status === 'LIVE').length;
+      const liveMatches = matches.filter(m => m.status === 'LIVE');
+      const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
+      const finishedMatches = matches.filter(m => m.status === 'FT' || m.status === 'RESULT');
+      const liveCount = liveMatches.length;
       
-      return (
-        <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden font-sans">
-             {/* Background Effects */}
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-penrice-navy rounded-full blur-[120px] opacity-40 -translate-y-1/2 translate-x-1/4 animate-pulse"></div>
-             <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-red-900 rounded-full blur-[120px] opacity-30 translate-y-1/3 -translate-x-1/4"></div>
+      const nextMatch = liveMatches.length > 0 ? liveMatches[0] : (upcomingMatches.length > 0 ? upcomingMatches[0] : null);
 
-             {/* Top Bar */}
-             <div className="relative z-10 px-6 py-8 flex justify-between items-center opacity-0 animate-fade-in-down">
-                <div className="flex items-center gap-3">
-                    <div className="bg-penrice-navy p-1.5 rounded-lg border border-white/20">
-                        <Logo className="h-8 w-8 md:h-10 md:w-10" />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="font-display font-bold text-lg leading-none tracking-wider uppercase hidden md:inline">Penrice Academy</span>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest hidden md:inline">Match Centre v2.0</span>
+      return (
+        <div className="min-h-screen bg-black text-white flex flex-col font-sans relative overflow-hidden">
+             {/* Dynamic Background */}
+             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
+             <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-penrice-gold rounded-full blur-[150px] opacity-10 animate-pulse"></div>
+             <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-penrice-navy rounded-full blur-[120px] opacity-30"></div>
+
+             {/* Header */}
+             <div className="relative z-20 px-8 py-6 flex justify-between items-center border-b border-white/5 bg-black/50 backdrop-blur-sm">
+                <div className="flex items-center gap-4">
+                    <Logo className="h-8 w-auto invert brightness-0" />
+                    <div className="h-6 w-px bg-white/20 hidden md:block"></div>
+                    <div className="hidden md:flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 leading-none mb-1">Official Data Partner</span>
+                        <span className="font-display font-bold uppercase leading-none text-white">Penrice Sport</span>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 backdrop-blur-sm">
-                        <div className={`w-1.5 h-1.5 rounded-full ${liveCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></div>
-                        {liveCount > 0 ? `${liveCount} Live Matches` : 'System Online'}
-                    </span>
+                <div className="flex items-center gap-4">
+                    <div className="text-right hidden sm:block">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                    </div>
+                    {liveCount > 0 && (
+                        <div className="px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(220,38,38,0.5)]">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full"></span> Live
+                        </div>
+                    )}
                 </div>
              </div>
 
-             <div className="flex-1 max-w-6xl mx-auto w-full px-6 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 relative z-10 py-12">
+             {/* Main Content */}
+             <div className="flex-1 flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-12 relative z-10 max-w-7xl mx-auto w-full">
                  
-                 {/* Left: Text & Features */}
-                 <div className="flex-1 text-center lg:text-left">
-                     <div className="inline-block mb-6 opacity-0 animate-fade-in-up delay-100">
-                        <span className="bg-penrice-gold text-black text-[10px] font-bold px-3 py-1.5 uppercase tracking-[0.25em] rounded-sm">The Official Hub</span>
+                 {/* Left: Headline & CTA */}
+                 <div className="flex-1 text-center lg:text-left space-y-8 max-w-2xl">
+                     <div className="space-y-2 opacity-0 animate-fade-in-up delay-100">
+                         <div className="inline-flex items-center gap-2 border border-penrice-gold/30 rounded-full px-3 py-1 bg-penrice-gold/5 backdrop-blur-sm">
+                             <span className="text-[9px] font-bold text-penrice-gold uppercase tracking-widest">Version 2.0 Live</span>
+                         </div>
+                         <h1 className="text-6xl md:text-8xl font-display font-bold uppercase leading-[0.85] tracking-tighter">
+                             Match<br/>
+                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">Day Hub</span>
+                         </h1>
                      </div>
-                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold uppercase leading-[0.9] tracking-tighter mb-6 opacity-0 animate-fade-in-up delay-200 drop-shadow-2xl">
-                         Game Day<br/>
-                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">Central</span>
-                     </h1>
-                     <p className="text-gray-400 text-sm md:text-base max-w-lg mx-auto lg:mx-0 font-medium leading-relaxed mb-10 opacity-0 animate-fade-in-up delay-300">
-                         Welcome to the digital home of Penrice Sport. Track every run, goal, and try in real-time. Access match reports, live statistics, and team news instantly from the sideline.
-                     </p>
                      
-                     {/* Feature Grid */}
-                     <div className="grid grid-cols-3 gap-6 border-t border-white/10 pt-8 opacity-0 animate-fade-in-up delay-500 max-w-lg mx-auto lg:mx-0">
-                         <div className="group">
-                             <div className="w-10 h-10 bg-penrice-navy/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-penrice-gold group-hover:text-black transition-colors">
-                                <i className="fa-solid fa-bolt text-penrice-gold text-lg group-hover:text-black"></i>
-                             </div>
-                             <div className="text-[9px] font-bold uppercase text-gray-500 tracking-wider mb-0.5">Real-Time</div>
-                             <div className="font-display font-bold text-lg">Live Scores</div>
-                         </div>
-                         <div className="group">
-                             <div className="w-10 h-10 bg-penrice-navy/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-penrice-gold group-hover:text-black transition-colors">
-                                <i className="fa-solid fa-chart-pie text-penrice-gold text-lg group-hover:text-black"></i>
-                             </div>
-                             <div className="text-[9px] font-bold uppercase text-gray-500 tracking-wider mb-0.5">Deep Dive</div>
-                             <div className="font-display font-bold text-lg">Statistics</div>
-                         </div>
-                         <div className="group">
-                             <div className="w-10 h-10 bg-penrice-navy/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-penrice-gold group-hover:text-black transition-colors">
-                                <i className="fa-regular fa-images text-penrice-gold text-lg group-hover:text-black"></i>
-                             </div>
-                             <div className="text-[9px] font-bold uppercase text-gray-500 tracking-wider mb-0.5">Media</div>
-                             <div className="font-display font-bold text-lg">Reports</div>
-                         </div>
-                     </div>
-                 </div>
+                     <p className="text-gray-400 text-lg md:text-xl font-medium leading-relaxed max-w-lg mx-auto lg:mx-0 opacity-0 animate-fade-in-up delay-200">
+                         Your direct line to the sideline. Real-time scores, granular statistics, and match reports from Penrice Academy fixtures.
+                     </p>
 
-                 {/* Right: Daily Schedule Card */}
-                 <div className="w-full max-w-md opacity-0 animate-fade-in-up delay-700">
-                     <div className="bg-gradient-to-b from-white to-gray-100 text-black p-1 rounded-sm shadow-[16px_16px_0px_rgba(255,184,28,0.15)] relative group">
-                         <div className="absolute inset-0 bg-penrice-gold opacity-0 group-hover:opacity-100 transition-opacity blur-xl -z-10"></div>
-                         
-                         <div className="bg-white border border-gray-200 p-5">
-                             <div className="flex justify-between items-end mb-6 border-b border-gray-100 pb-4">
-                                 <div>
-                                     <div className="flex items-center gap-2 mb-1">
-                                         <div className="w-2 h-2 bg-black rounded-full"></div>
-                                         <h3 className="text-xs font-bold text-black uppercase tracking-widest">Today's Schedule</h3>
-                                     </div>
-                                     <div className="text-[10px] text-gray-400 font-bold uppercase pl-4">{new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric'})}</div>
-                                 </div>
-                                 <div className="text-right">
-                                     <div className="text-3xl font-display font-bold leading-none">{matches.length}</div>
-                                     <div className="text-[9px] text-gray-400 font-bold uppercase">Active Fixtures</div>
-                                 </div>
-                             </div>
-
-                             {/* List */}
-                             <div className="space-y-3 max-h-[280px] overflow-y-auto custom-scroll pr-2 mb-6">
-                                 {loading ? (
-                                     <div className="py-12 text-center">
-                                         <i className="fa-solid fa-circle-notch fa-spin text-gray-300 text-2xl mb-2"></i>
-                                         <div className="text-[10px] font-bold text-gray-400 uppercase animate-pulse">Syncing Fixtures...</div>
-                                     </div>
-                                 ) : matches.length === 0 ? (
-                                     <div className="py-12 text-center bg-gray-50 border border-dashed border-gray-200 rounded-sm">
-                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No fixtures today</p>
-                                     </div>
-                                 ) : (
-                                     matches.map(m => (
-                                         <div key={m.id} className="flex items-center justify-between bg-gray-50 border border-gray-100 p-3 hover:border-black hover:bg-white hover:shadow-md transition-all group/item">
-                                             <div className="flex items-center gap-4 overflow-hidden">
-                                                 <div className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full text-sm group-hover/item:scale-110 transition-transform">
-                                                     {getSportIcon(m.sport)}
-                                                 </div>
-                                                 <div className="flex flex-col truncate">
-                                                     <span className="text-[9px] font-bold uppercase text-gray-400 leading-none mb-1">{m.teamName} vs</span>
-                                                     <span className="text-xs font-bold uppercase leading-none truncate">{m.opponent}</span>
-                                                 </div>
-                                             </div>
-                                             <div className="pl-2">
-                                                 {m.status === 'LIVE' ? (
-                                                     <div className="flex items-center gap-1.5 bg-red-600/10 border border-red-600/20 px-2 py-1 rounded-sm">
-                                                         <span className="w-1.5 h-1.5 bg-red-600 rounded-full block animate-pulse"></span>
-                                                         <span className="text-[9px] font-bold text-red-600 uppercase">Live</span>
-                                                     </div>
-                                                 ) : (
-                                                     <span className="text-[9px] font-bold text-gray-400 uppercase bg-gray-100 px-2 py-1 rounded-sm">{m.status === 'UPCOMING' ? (m.league ? 'TBC' : 'Soon') : 'FT'}</span>
-                                                 )}
-                                             </div>
-                                         </div>
-                                     ))
-                                 )}
-                             </div>
-
-                             {/* CTA */}
+                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start opacity-0 animate-fade-in-up delay-300">
+                         <button 
+                            onClick={() => setShowWelcome(false)}
+                            className="bg-white text-black px-8 py-4 font-display font-bold uppercase text-lg tracking-wider hover:bg-penrice-gold transition-colors shadow-[4px_4px_0px_rgba(255,255,255,0.2)] hover:shadow-[4px_4px_0px_rgba(255,184,28,1)] active:translate-y-0.5 active:shadow-none"
+                         >
+                             Enter Dashboard
+                         </button>
+                         {liveCount > 0 && (
                              <button 
                                 onClick={() => setShowWelcome(false)}
-                                className="w-full bg-black text-white py-4 font-display font-bold uppercase text-lg tracking-wide hover:bg-penrice-gold hover:text-black transition-all active:scale-[0.98] group/btn flex items-center justify-center gap-3 relative overflow-hidden"
+                                className="bg-transparent border border-white/30 text-white px-8 py-4 font-display font-bold uppercase text-lg tracking-wider hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
                              >
-                                 <span className="relative z-10">Enter Match Centre</span>
-                                 <i className="fa-solid fa-arrow-right text-xs relative z-10 group-hover/btn:translate-x-1 transition-transform"></i>
+                                 <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> View Live
                              </button>
+                         )}
+                     </div>
+                     
+                     {/* Stats Row */}
+                     <div className="pt-8 border-t border-white/10 grid grid-cols-3 gap-8 opacity-0 animate-fade-in-up delay-500">
+                         <div>
+                             <div className="text-3xl font-display font-bold">{matches.length}</div>
+                             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Total Fixtures</div>
+                         </div>
+                         <div>
+                             <div className="text-3xl font-display font-bold text-penrice-gold">{liveCount}</div>
+                             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Active Now</div>
+                         </div>
+                         <div>
+                             <div className="text-3xl font-display font-bold">{finishedMatches.length}</div>
+                             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Completed</div>
                          </div>
                      </div>
                  </div>
 
-             </div>
+                 {/* Right: Dashboard Preview Card */}
+                 <div className="w-full max-w-md lg:w-[450px] opacity-0 animate-fade-in-up delay-700 perspective-1000">
+                     <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl transform rotate-y-[-5deg] hover:rotate-y-0 transition-transform duration-500">
+                         
+                         {/* Card Header */}
+                         <div className="p-6 bg-gradient-to-b from-white/10 to-transparent border-b border-white/5">
+                             <div className="flex justify-between items-center mb-4">
+                                 <h3 className="text-sm font-bold uppercase tracking-widest text-white">Overview</h3>
+                                 <div className="flex gap-1">
+                                     <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                     <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                 </div>
+                             </div>
+                             
+                             {nextMatch ? (
+                                 <div>
+                                     <span className="text-[10px] font-bold text-penrice-gold uppercase tracking-widest mb-2 block">
+                                         {nextMatch.status === 'LIVE' ? 'In Progress' : 'Next Up'}
+                                     </span>
+                                     <div className="flex justify-between items-end">
+                                         <div>
+                                             <div className="text-2xl font-display font-bold uppercase leading-none mb-1">{nextMatch.teamName}</div>
+                                             <div className="text-[10px] text-gray-400 uppercase">VS</div>
+                                             <div className="text-2xl font-display font-bold uppercase leading-none mt-1 text-gray-300">{nextMatch.opponent}</div>
+                                         </div>
+                                         <div className="text-right">
+                                             <div className="text-3xl font-display font-bold">{nextMatch.homeScore}-{nextMatch.awayScore}</div>
+                                             <div className="text-[10px] font-bold uppercase text-gray-400">{nextMatch.sport}</div>
+                                         </div>
+                                     </div>
+                                 </div>
+                             ) : (
+                                 <div className="py-8 text-center">
+                                     <p className="text-gray-400 text-xs font-bold uppercase">No matches scheduled</p>
+                                 </div>
+                             )}
+                         </div>
 
-             {/* Footer Strip */}
-             <div className="relative z-10 border-t border-white/5 bg-black/40 backdrop-blur-sm py-4 px-6 flex flex-col md:flex-row justify-between items-center text-[9px] font-bold text-gray-500 uppercase tracking-widest gap-2">
-                 <span>&copy; {new Date().getFullYear()} Penrice Academy</span>
-                 <span className="flex items-center gap-4">
-                     <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-                     <span className="hover:text-white cursor-pointer transition-colors">Support</span>
-                     <span className="flex items-center gap-1"><i className="fa-solid fa-signal text-green-500"></i> System Operational</span>
-                 </span>
+                         {/* Mini List */}
+                         <div className="bg-black/40 p-2 max-h-[250px] overflow-y-auto custom-scroll">
+                             {matches.length === 0 && (
+                                 <div className="p-4 text-center text-[10px] text-gray-500 uppercase">Waiting for data sync...</div>
+                             )}
+                             {matches.map(m => (
+                                 <div key={m.id} className="flex items-center justify-between p-3 mb-1 bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-default">
+                                     <div className="flex items-center gap-3">
+                                         <span className="text-lg">{getSportIcon(m.sport)}</span>
+                                         <div className="flex flex-col">
+                                             <span className="text-[10px] font-bold text-white uppercase leading-none">{m.opponent}</span>
+                                             <span className="text-[9px] font-bold text-gray-500 uppercase mt-1">{m.yearGroup || 'Fixture'}</span>
+                                         </div>
+                                     </div>
+                                     <div className={`text-[9px] font-bold px-2 py-1 rounded-sm uppercase ${m.status === 'LIVE' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
+                                         {m.status === 'LIVE' ? 'Live' : (m.status === 'UPCOMING' ? 'Soon' : 'FT')}
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                         
+                         {/* Card Footer */}
+                         <div className="p-3 bg-black/60 border-t border-white/5 text-center">
+                             <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">System Operational</span>
+                         </div>
+                     </div>
+                 </div>
+
              </div>
         </div>
       );
