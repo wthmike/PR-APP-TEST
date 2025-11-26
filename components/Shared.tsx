@@ -6,14 +6,34 @@ export const LiveDot = () => (
 
 export const Logo = ({ className = "h-20" }: { className?: string }) => {
     const [imgError, setImgError] = useState(false);
+    
+    // Reference the local file in the public folder
+    // In Vite, 'public/pr-logo.png' is served at '/pr-logo.png'
+    const logoUrl = "/pr-logo.png";
 
     if (imgError) {
-        return null;
+        // Fallback SVG Logo (Penrice Shield Style) - Renders if image fails
+        return (
+            <div className={`${className} flex items-center justify-center overflow-hidden`}>
+                <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-auto">
+                    {/* Shield Shape */}
+                    <path d="M50 115C50 115 90 100 90 60V10H10V60C10 100 50 115 50 115Z" fill="#000000" stroke="#FFB81C" strokeWidth="4"/>
+                    {/* Quarters Grid */}
+                    <path d="M50 115V60M50 60V10M50 60H90M50 60H10" stroke="#FFB81C" strokeWidth="2"/>
+                    {/* Gold Accents */}
+                    <path d="M10 10H50V60H10V10Z" fill="#FFB81C" />
+                    <path d="M50 60H90V60C90 85 75 105 50 115V60Z" fill="#FFB81C" />
+                    {/* Initials */}
+                    <text x="28" y="45" textAnchor="middle" fill="#000000" fontSize="28" fontFamily="sans-serif" fontWeight="900">P</text>
+                    <text x="72" y="95" textAnchor="middle" fill="#000000" fontSize="28" fontFamily="sans-serif" fontWeight="900">A</text>
+                </svg>
+            </div>
+        );
     }
     
     return (
         <img 
-            src="/pr-logo.png"
+            src={logoUrl}
             alt="Penrice Logo" 
             className={`${className} w-auto object-contain`}
             onError={() => setImgError(true)}

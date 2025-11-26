@@ -75,7 +75,7 @@ export default function App() {
     };
   }, []);
 
-  // Carousel Effect for Welcome Screen
+  // Carousel Effect for Welcome Screen (Just for the bottom ticker now)
   const liveMatches = matches.filter(m => m.status === 'LIVE');
   const liveCount = liveMatches.length;
 
@@ -134,8 +134,9 @@ export default function App() {
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-penrice-gold to-transparent opacity-50"></div>
                     
                     <div className="flex flex-col items-center mb-10 opacity-0 animate-fade-in-down">
-                         <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center border border-white/10 mb-6 shadow-[0_0_30px_rgba(255,184,28,0.1)]">
-                             <Logo className="h-10" />
+                         {/* Logo Container - White Background for visibility */}
+                         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-black mb-6 shadow-[0_0_30px_rgba(255,184,28,0.4)]">
+                             <Logo className="h-14" />
                          </div>
                          <h1 className="text-3xl font-display font-bold text-white uppercase tracking-tight text-center leading-none mb-2">
                              Match<span className="text-penrice-gold">Centre</span>
@@ -189,155 +190,85 @@ export default function App() {
       );
   }
 
-  // --- VIEW 2: WELCOME / ONBOARDING ---
+  // --- VIEW 2: WELCOME / ONBOARDING (INSTRUCTIONAL) ---
   if (showWelcome) {
-      const upcomingMatches = matches.filter(m => m.status === 'UPCOMING').sort((a,b) => (a.sortOrder||99) - (b.sortOrder||99));
-      const finishedMatches = matches.filter(m => m.status === 'FT' || m.status === 'RESULT').sort((a,b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
-      
       const activeLiveMatch = liveMatches.length > 0 ? liveMatches[heroIndex % liveMatches.length] : null;
-      const nextMatch = upcomingMatches[0];
-      
-      // Hero Logic
-      const heroMatch = activeLiveMatch || nextMatch;
-      const isHeroLive = !!activeLiveMatch;
 
-      // Bottom List Logic: Show next 3 relevant matches excluding the one in hero
-      let bottomList: Match[] = [];
-      if (isHeroLive) {
-          bottomList = [...upcomingMatches, ...finishedMatches];
-      } else {
-          bottomList = [...upcomingMatches.slice(1), ...finishedMatches];
-      }
-      bottomList = bottomList.slice(0, 3);
-      
       return (
-        <div className="flex flex-col md:flex-row h-screen w-screen overflow-hidden font-sans bg-white">
-            {/* LEFT PANEL - WELCOME & CONTEXT */}
-            <div className="w-full md:w-5/12 bg-white flex flex-col justify-center p-8 md:p-12 relative z-20 shadow-[20px_0_40px_rgba(0,0,0,0.1)]">
-                <Logo className="h-16 mb-8 self-start" /> 
+        <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center relative overflow-hidden font-sans text-white p-6">
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-penrice-navy/40 via-neutral-950 to-black pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+            
+            {/* Animated accent */}
+            <div className="absolute -top-40 -right-40 w-96 h-96 bg-penrice-gold/10 rounded-full blur-[128px] pointer-events-none"></div>
+
+            <div className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center">
                 
-                <div className="mb-2 flex items-center gap-2 animate-fade-in-up">
-                    <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Live Coverage</span>
+                {/* 1. Header & Welcome Message */}
+                <div className="mb-12 animate-fade-in-down">
+                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center border-4 border-black mx-auto mb-6 shadow-2xl">
+                        <Logo className="h-10" />
+                    </div>
+                    <h1 className="text-4xl md:text-6xl font-display font-bold uppercase tracking-tight mb-4">
+                        Welcome to<br/>Penrice<span className="text-penrice-gold">Sport</span>
+                    </h1>
+                    <p className="text-gray-400 text-sm md:text-base font-medium max-w-lg mx-auto leading-relaxed">
+                        Your official hub for live fixtures, real-time scoring data, and match reports from Penrice Academy.
+                    </p>
                 </div>
-                
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-penrice-navy uppercase leading-[0.9] mb-6 animate-fade-in-up delay-100">
-                    Match<br/><span className="text-penrice-gold">Centre</span>
-                </h1>
-                
-                <p className="text-gray-500 font-medium leading-relaxed max-w-md mb-10 animate-fade-in-up delay-200">
-                    Welcome to the official home of Penrice Academy sport. Follow live scores, match results, and fixture updates for Netball, Cricket, and Rugby.
-                </p>
-                
-                <button 
-                    onClick={() => setShowWelcome(false)}
-                    className="group w-full md:w-auto flex items-center justify-between gap-6 bg-black text-white px-8 py-5 text-xs font-bold uppercase tracking-widest hover:bg-penrice-navy transition-all rounded-sm shadow-lg hover:shadow-xl hover:-translate-y-1 animate-fade-in-up delay-300"
-                >
-                    <span>Enter Dashboard</span>
-                    <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                </button>
 
-                <div className="mt-auto pt-12 border-t border-gray-100 flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-fade-in delay-500">
-                    <span>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                </div>
-            </div>
-
-            {/* RIGHT PANEL - LIVE FEED */}
-            <div className="flex-1 bg-neutral-900 relative flex flex-col justify-center items-center p-8 md:p-12 overflow-hidden">
-                {/* Background FX */}
-                <div className="absolute inset-0 bg-gradient-to-br from-penrice-navy to-black opacity-90"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
-                
-                {/* Decorative Elements */}
-                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-penrice-gold rounded-full blur-[100px] opacity-10 animate-pulse"></div>
-
-                {/* Content Wrapper */}
-                <div className="relative z-10 w-full max-w-xl flex flex-col gap-6">
-                    
-                    {/* HEADER FOR RIGHT SIDE */}
-                    <div className="flex justify-between items-center text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2 animate-fade-in">
-                        <span>Featured Match</span>
-                        {liveMatches.length > 1 && <span>Auto-Rotating</span>}
+                {/* 2. Feature Guide Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mb-12 animate-fade-in-up delay-100">
+                    {/* Card 1: Live Scores */}
+                    <div className="bg-white/5 border border-white/10 p-6 rounded-lg text-left hover:bg-white/10 transition-colors group">
+                        <div className="w-10 h-10 bg-penrice-navy rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i className="fa-solid fa-wifi text-white text-sm"></i>
+                        </div>
+                        <h3 className="font-display font-bold text-lg uppercase mb-1">Live Match Centre</h3>
+                        <p className="text-gray-400 text-xs leading-relaxed">
+                            View real-time scores, play-by-play commentary, and player stats. Tap on any <span className="text-white font-bold">Live Card</span> to expand detailed scorecards.
+                        </p>
                     </div>
 
-                    {/* MAIN CARD (CAROUSEL) */}
-                    {heroMatch ? (
-                        <div key={heroMatch.id} className="bg-white rounded-sm shadow-2xl overflow-hidden animate-fade-in-up">
-                            {/* Status Bar */}
-                            <div className="bg-gray-100 p-4 flex justify-between items-center border-b border-gray-200">
-                                <div className="flex items-center gap-2">
-                                    {isHeroLive ? (
-                                        <span className="bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider animate-pulse">Live Now</span>
-                                    ) : (
-                                        <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider">Upcoming</span>
-                                    )}
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate max-w-[150px]">{heroMatch.sport} • {heroMatch.yearGroup}</span>
-                                </div>
-                                {heroMatch.sport === 'cricket' && isHeroLive && <span className="text-xs font-bold text-black font-mono">Ov {heroMatch.currentOver?.toFixed(1) || '0.0'}</span>}
-                                {heroMatch.sport !== 'cricket' && isHeroLive && <span className="text-xs font-bold text-black font-mono">{heroMatch.period}</span>}
+                    {/* Card 2: News */}
+                    <div className="bg-white/5 border border-white/10 p-6 rounded-lg text-left hover:bg-white/10 transition-colors group">
+                        <div className="w-10 h-10 bg-penrice-gold rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i className="fa-solid fa-newspaper text-black text-sm"></i>
+                        </div>
+                        <h3 className="font-display font-bold text-lg uppercase mb-1">News & Reports</h3>
+                        <p className="text-gray-400 text-xs leading-relaxed">
+                            Read detailed match reports, view player highlights, and browse historical results in the <span className="text-white font-bold">News Feed</span> tab.
+                        </p>
+                    </div>
+                </div>
+
+                {/* 3. Primary CTA */}
+                <button 
+                    onClick={() => setShowWelcome(false)}
+                    className="group relative bg-white text-black px-12 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-penrice-gold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,184,28,0.4)] overflow-hidden animate-pop-in delay-200"
+                >
+                    <span className="relative z-10">Launch Dashboard</span>
+                    <div className="absolute inset-0 bg-white group-hover:bg-penrice-gold transition-colors duration-300"></div>
+                </button>
+
+                {/* 4. Subtle Live Indicator (If matches are happening) */}
+                {activeLiveMatch && (
+                     <div className="mt-8 animate-fade-in delay-500">
+                        <div className="inline-flex items-center gap-3 bg-neutral-900 border border-white/10 rounded-full px-4 py-1.5 pr-6">
+                            <div className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
                             </div>
-
-                            {/* Score Body */}
-                            <div className="p-8 flex items-center justify-between">
-                                {/* Home */}
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="text-xl md:text-2xl font-display font-bold text-black uppercase leading-none mb-2 break-words line-clamp-2">{heroMatch.teamName}</span>
-                                    <span className="text-4xl md:text-5xl font-display font-bold text-penrice-navy">
-                                        {heroMatch.homeScore}{heroMatch.sport==='cricket' && <span className="text-2xl md:text-3xl text-gray-400">/{heroMatch.homeWickets}</span>}
-                                    </span>
-                                </div>
-
-                                {/* VS */}
-                                <div className="w-px h-16 bg-gray-200 mx-2"></div>
-
-                                {/* Away */}
-                                <div className="flex flex-col text-center w-1/3">
-                                    <span className="text-xl md:text-2xl font-display font-bold text-black uppercase leading-none mb-2 break-words line-clamp-2">{heroMatch.opponent}</span>
-                                    <span className="text-4xl md:text-5xl font-display font-bold text-gray-500">
-                                        {heroMatch.awayScore}{heroMatch.sport==='cricket' && <span className="text-2xl md:text-3xl text-gray-300">/{heroMatch.awayWickets}</span>}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            {/* Latest Event Footer */}
-                            {isHeroLive && heroMatch.events && heroMatch.events.length > 0 && (
-                                <div className="bg-penrice-navy text-white p-3 text-xs flex items-center gap-3">
-                                    <span className="text-penrice-gold font-bold uppercase text-[9px] tracking-widest shrink-0">Latest</span>
-                                    <span className="truncate opacity-90">{heroMatch.events[heroMatch.events.length-1].desc}</span>
-                                </div>
-                            )}
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                                Live Now: <span className="text-white">{activeLiveMatch.teamName} vs {activeLiveMatch.opponent}</span>
+                            </span>
                         </div>
-                    ) : (
-                        <div className="bg-white/5 border border-white/10 p-12 rounded-sm text-center animate-fade-in">
-                            <i className="fa-regular fa-calendar-xmark text-4xl text-white/20 mb-4"></i>
-                            <div className="text-white/50 text-sm font-bold uppercase tracking-widest">No active fixtures</div>
-                        </div>
-                    )}
-
-                    {/* SUB LIST (Smaller Cards) */}
-                    {bottomList.length > 0 && (
-                        <div className="space-y-3 mt-4 animate-fade-in-up delay-100">
-                            <div className="text-white/30 text-[9px] font-bold uppercase tracking-widest">Other Fixtures</div>
-                            {bottomList.map(m => (
-                                <div key={m.id} className="bg-white/10 hover:bg-white/20 border border-white/5 p-3 rounded-sm flex items-center justify-between transition-colors backdrop-blur-sm cursor-default">
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs shrink-0">
-                                            {m.sport === 'cricket' ? '🏏' : (m.sport === 'rugby' ? '🏉' : '🏐')}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-xs font-bold text-white uppercase truncate">{m.opponent}</span>
-                                            <span className="text-[9px] text-gray-400 uppercase truncate">{m.yearGroup} • {m.status === 'FT' ? 'Result' : m.status}</span>
-                                        </div>
-                                    </div>
-                                    {(m.status === 'LIVE' || m.status === 'FT' || m.status === 'RESULT') && (
-                                        <span className="font-mono text-xs font-bold text-penrice-gold ml-2 shrink-0">
-                                            {m.homeScore}{m.sport==='cricket'&&`/${m.homeWickets}`} - {m.awayScore}{m.sport==='cricket'&&`/${m.awayWickets}`}
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                     </div>
+                )}
+                
+                <div className="mt-12 opacity-20">
+                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.3em]">Penrice Academy</p>
                 </div>
             </div>
         </div>
