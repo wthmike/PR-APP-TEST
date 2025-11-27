@@ -8,8 +8,8 @@ export const Logo = ({ className = "h-20" }: { className?: string }) => {
     // 0 = Local File, 1 = External Backup, 2 = SVG Fallback
     const [loadState, setLoadState] = useState(0);
     
-    // 1. Try absolute path from public root
-    const localUrl = "/pr-logo.png";
+    // 1. Try relative path (better for sub-folder deployments)
+    const localUrl = "pr-logo.png";
     // 2. Fallback to official website logo if local fails
     const externalUrl = "https://www.penriceacademy.org/wp-content/uploads/2021/09/Penrice-Academy-Logo-2021-Web.png";
 

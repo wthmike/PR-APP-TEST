@@ -75,13 +75,28 @@ export default function App() {
     };
   }, []);
 
-  // Carousel Logic for Onboarding
-  // 1. Prioritize LIVE matches.
-  // 2. If no LIVE matches, show UPCOMING or RECENT.
+  // --- HERO CAROUSEL LOGIC ---
   const liveMatches = matches.filter(m => m.status === 'LIVE');
-  const heroSource = liveMatches.length > 0 ? liveMatches : matches.slice(0, 5); // Fallback to first 5 matches if none live
-  const heroCount = heroSource.length;
-  const currentHeroMatch = heroCount > 0 ? heroSource[heroIndex % heroCount] : null;
+  const upcomingMatches = matches.filter(m => m.status === 'UPCOMING');
+  
+  // Determine the pool of matches to cycle through in the Hero section
+  // Priority: 1. LIVE Matches, 2. UPCOMING Matches (if no live), 3. RECENT (if nothing else)
+  let heroPool: Match[] = [];
+  let heroTitleLabel = "";
+  
+  if (liveMatches.length > 0) {
+      heroPool = liveMatches;
+      heroTitleLabel = "Live Now";
+  } else if (upcomingMatches.length > 0) {
+      heroPool = upcomingMatches;
+      heroTitleLabel = "Up Next";
+  } else {
+      heroPool = matches.slice(0, 3); // Fallback to whatever is available
+      heroTitleLabel = "Recent Activity";
+  }
+
+  const heroCount = heroPool.length;
+  const currentHeroMatch = heroCount > 0 ? heroPool[heroIndex % heroCount] : null;
 
   useEffect(() => {
       if (!showWelcome) return;
@@ -96,6 +111,21 @@ export default function App() {
           setHeroIndex(0);
       }
   }, [showWelcome, heroCount]);
+
+  // --- BOTTOM LIST LOGIC ---
+  // Exclude the match currently shown in the Hero card to avoid duplication
+  const secondaryMatches = matches
+    .filter(m => m.id !== currentHeroMatch?.id)
+    .sort((a, b) => {
+        // Custom Sort Priority: LIVE -> UPCOMING -> FT -> RESULT
+        const score = (status: string) => {
+            if (status === 'LIVE') return 0;
+            if (status === 'UPCOMING') return 1;
+            return 2;
+        };
+        return score(a.status) - score(b.status);
+    })
+    .slice(0, 3); // Take top 3 relevant matches
 
   const handleAppUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +171,7 @@ export default function App() {
                       {isLive ? (
                           <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse uppercase tracking-widest">Live Now</span>
                       ) : (
-                          <span className="bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">{m.status === 'UPCOMING' ? 'Up Next' : 'Result'}</span>
+                          <span className="bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">{heroTitleLabel}</span>
                       )}
                       <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest border-l border-white/20 pl-2">{m.sport}</span>
                   </div>
@@ -251,9 +281,6 @@ export default function App() {
 
   // --- VIEW 2: WELCOME / ONBOARDING (DASHBOARD PREVIEW) ---
   if (showWelcome) {
-      // Calculate matches to show in bottom list (Everything except current hero)
-      const secondaryMatches = matches.filter(m => m.id !== currentHeroMatch?.id);
-
       return (
         <div className="min-h-screen bg-neutral-950 flex flex-col font-sans text-white overflow-hidden relative">
             {/* Background */}
@@ -305,24 +332,31 @@ export default function App() {
 
                 {/* 2. SECONDARY CARDS (Bottom List) */}
                 <div className="w-full max-w-4xl">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 border-b border-white/10 pb-1">
-                        Upcoming & Recent
+                    <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Other Fixtures</span>
+                        <span className="text-[9px] font-bold text-penrice-gold uppercase tracking-widest">
+                            {upcomingMatches.length > 0 ? 'Upcoming' : 'Results'}
+                        </span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                          {secondaryMatches.length === 0 && (
-                             <div className="text-gray-600 text-xs italic">No other matches scheduled.</div>
+                             <div className="col-span-3 text-center py-6 text-gray-600 text-xs italic border border-dashed border-white/10 rounded-lg">
+                                 No other matches scheduled.
+                             </div>
                          )}
-                         {secondaryMatches.slice(0, 3).map(m => (
-                             <div key={m.id} className="bg-white/5 border border-white/10 p-4 rounded-lg hover:bg-white/10 transition-colors flex flex-col justify-between h-24">
+                         {secondaryMatches.map(m => (
+                             <div key={m.id} className="bg-white/5 border border-white/10 p-4 rounded-lg hover:bg-white/10 transition-colors flex flex-col justify-between h-24 group cursor-pointer" onClick={() => setShowWelcome(false)}>
                                  <div className="flex justify-between items-start">
                                      <span className="text-[9px] font-bold text-penrice-gold uppercase tracking-widest">{m.sport}</span>
                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase ${m.status==='LIVE' ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-700 text-gray-300'}`}>
-                                         {m.status}
+                                         {m.status === 'UPCOMING' ? 'SOON' : m.status}
                                      </span>
                                  </div>
                                  <div>
-                                     <div className="font-display font-bold text-lg text-white leading-none truncate">{m.opponent}</div>
-                                     <div className="text-xs text-gray-400 font-medium truncate">{m.yearGroup} • {m.league}</div>
+                                     <div className="font-display font-bold text-lg text-white leading-none truncate group-hover:text-penrice-gold transition-colors">{m.opponent}</div>
+                                     <div className="text-xs text-gray-400 font-medium truncate mt-1">
+                                         {m.yearGroup} {m.league ? `• ${m.league}` : ''}
+                                     </div>
                                  </div>
                              </div>
                          ))}
