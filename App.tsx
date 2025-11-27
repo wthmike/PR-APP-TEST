@@ -105,7 +105,7 @@ export default function App() {
       if (heroCount > 1) {
           const timer = setInterval(() => {
               setHeroIndex(prev => (prev + 1) % heroCount);
-          }, 5000);
+          }, 6000); // Slower cycle for editorial feel
           return () => clearInterval(timer);
       } else {
           setHeroIndex(0);
@@ -125,7 +125,7 @@ export default function App() {
         };
         return score(a.status) - score(b.status);
     })
-    .slice(0, 3); // Take top 3 relevant matches
+    .slice(0, 6); // More matches for the list view
 
   const handleAppUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,65 +147,6 @@ export default function App() {
     } else {
       setError(true);
     }
-  };
-
-  // Helper to render hero content
-  const renderHeroContent = (m: Match) => {
-      const isLive = m.status === 'LIVE';
-      const isCricket = m.sport === 'cricket';
-      const homeColor = m.homeTeamColor || '#000000';
-      const awayColor = m.awayTeamColor || '#ffffff';
-
-      return (
-          <div className="w-full h-full relative overflow-hidden group">
-              {/* Dynamic Background */}
-              <div className="absolute inset-0 flex">
-                  <div style={{ backgroundColor: homeColor }} className="w-1/2 h-full opacity-20"></div>
-                  <div style={{ backgroundColor: awayColor }} className="w-1/2 h-full opacity-20"></div>
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-              
-              {/* Content */}
-              <div className="relative z-10 flex flex-col items-center justify-center h-full p-6 text-center animate-fade-in key={m.id}">
-                  <div className="flex items-center gap-2 mb-4">
-                      {isLive ? (
-                          <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse uppercase tracking-widest">Live Now</span>
-                      ) : (
-                          <span className="bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">{heroTitleLabel}</span>
-                      )}
-                      <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest border-l border-white/20 pl-2">{m.sport}</span>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-4 md:gap-12 w-full">
-                      <div className="flex-1 text-right">
-                          <h2 className="text-2xl md:text-4xl font-display font-bold uppercase text-white leading-none mb-1">{m.teamName}</h2>
-                          {isLive && isCricket && m.penriceStatus === 'batting' && <span className="text-penrice-gold text-xs font-bold uppercase tracking-widest">Batting</span>}
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                          <div className="text-4xl md:text-6xl font-display font-bold text-white bg-white/10 px-4 py-2 rounded-sm backdrop-blur-sm border border-white/10 shadow-lg min-w-[140px] text-center">
-                              {m.homeScore}<span className="opacity-50 mx-1">-</span>{m.awayScore}
-                          </div>
-                          {isCricket && (
-                              <div className="mt-2 text-xs font-mono text-gray-400">
-                                  {m.currentOver?.toFixed(1)} Overs
-                              </div>
-                          )}
-                           {!isCricket && isLive && (
-                              <div className="mt-2 text-xs font-mono text-gray-400">
-                                  {m.period}
-                              </div>
-                          )}
-                      </div>
-
-                      <div className="flex-1 text-left">
-                          <h2 className="text-2xl md:text-4xl font-display font-bold uppercase text-white leading-none mb-1">{m.opponent}</h2>
-                          {isLive && isCricket && m.penriceStatus !== 'batting' && <span className="text-penrice-gold text-xs font-bold uppercase tracking-widest">Batting</span>}
-                      </div>
-                  </div>
-              </div>
-          </div>
-      );
   };
 
   // --- VIEW 1: LOCK SCREEN ---
@@ -279,90 +220,139 @@ export default function App() {
       );
   }
 
-  // --- VIEW 2: WELCOME / ONBOARDING (DASHBOARD PREVIEW) ---
+  // --- VIEW 2: EDITORIAL WELCOME SCREEN ---
   if (showWelcome) {
       return (
-        <div className="min-h-screen bg-neutral-950 flex flex-col font-sans text-white overflow-hidden relative">
-            {/* Background */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-penrice-navy/30 via-neutral-950 to-black pointer-events-none"></div>
+        <div className="fixed inset-0 z-[200] bg-white font-sans flex flex-col md:flex-row overflow-hidden animate-fade-in">
+            
+            {/* LEFT PANEL: HERO / COVER STORY (70% Width) */}
+            <div className="relative w-full md:w-[70%] h-[60vh] md:h-full bg-neutral-900 text-white overflow-hidden">
+                {currentHeroMatch ? (
+                    <div key={currentHeroMatch.id} className="absolute inset-0 animate-fade-in">
+                        {/* Dynamic Split Background */}
+                        <div className="absolute inset-0 flex">
+                             <div className="w-full h-full relative">
+                                <div style={{ backgroundColor: currentHeroMatch.homeTeamColor || '#000000' }} className="absolute inset-0 opacity-40 mix-blend-color-dodge"></div>
+                                <div style={{ backgroundColor: currentHeroMatch.awayTeamColor || '#ffffff' }} className="absolute inset-0 opacity-20 mix-blend-overlay bg-gradient-to-l from-transparent to-black"></div>
+                             </div>
+                        </div>
+                        {/* Texture & Gradients */}
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80"></div>
 
-            {/* Header Area */}
-            <div className="relative z-10 px-6 py-6 flex justify-between items-center">
-                 <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border-2 border-black">
-                        <Logo className="h-6" />
-                     </div>
-                     <h1 className="text-xl font-display font-bold uppercase tracking-tight">Penrice<span className="text-penrice-gold">Sport</span></h1>
-                 </div>
-                 <button 
-                    onClick={() => setShowWelcome(false)}
-                    className="bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-penrice-gold transition-colors shadow-lg"
-                >
-                    Enter App <i className="fa-solid fa-arrow-right ml-2"></i>
-                </button>
+                        {/* Content Container */}
+                        <div className="absolute inset-0 flex flex-col justify-center items-center p-8 md:p-16 text-center z-10">
+                            
+                            {/* Top Badge */}
+                            <div className="mb-6 flex flex-col items-center gap-3 animate-fade-in-down">
+                                <span className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.3em] border ${currentHeroMatch.status === 'LIVE' ? 'border-red-600 text-red-500 bg-red-950/30' : 'border-white/30 text-white/70'}`}>
+                                    {currentHeroMatch.status === 'LIVE' ? 'Happening Now' : 'Featured Match'}
+                                </span>
+                                <div className="h-8 w-px bg-white/20"></div>
+                            </div>
+
+                            {/* Teams - Massive Typography */}
+                            <div className="flex flex-col gap-2 md:gap-4 w-full max-w-4xl">
+                                <h1 className="font-display font-bold text-5xl md:text-8xl lg:text-9xl uppercase tracking-tighter leading-[0.85] text-white drop-shadow-2xl opacity-90 truncate">
+                                    {currentHeroMatch.teamName}
+                                </h1>
+                                <div className="flex items-center justify-center gap-6 my-2 md:my-4">
+                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-penrice-gold to-transparent opacity-50"></div>
+                                     <span className="font-display font-bold text-2xl md:text-4xl text-penrice-gold italic">VS</span>
+                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-penrice-gold to-transparent opacity-50"></div>
+                                </div>
+                                <h1 className="font-display font-bold text-5xl md:text-8xl lg:text-9xl uppercase tracking-tighter leading-[0.85] text-white drop-shadow-2xl opacity-90 truncate">
+                                    {currentHeroMatch.opponent}
+                                </h1>
+                            </div>
+
+                            {/* Score & Context */}
+                            <div className="mt-8 md:mt-12 flex flex-col items-center animate-fade-in-up">
+                                <div className="font-display font-bold text-6xl md:text-8xl text-white tracking-tight leading-none mb-2">
+                                    {currentHeroMatch.homeScore}<span className="text-white/20 mx-2">-</span>{currentHeroMatch.awayScore}
+                                </div>
+                                <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">
+                                    {currentHeroMatch.sport} • {currentHeroMatch.league || 'Fixture'} • {currentHeroMatch.yearGroup}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Carousel Indicators */}
+                        {heroCount > 1 && (
+                            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3 z-20">
+                                {Array.from({ length: heroCount }).map((_, i) => (
+                                    <button 
+                                        key={i}
+                                        onClick={() => setHeroIndex(i)}
+                                        className={`h-1 transition-all duration-300 ${i === heroIndex ? 'w-8 bg-penrice-gold' : 'w-2 bg-white/20 hover:bg-white/50'}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black">
+                        <span className="text-gray-600 font-bold uppercase tracking-widest text-xs">No Featured Matches</span>
+                    </div>
+                )}
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-6 gap-8 relative z-10">
-                
-                {/* 1. HERO CARD (Carousel) */}
-                <div className="w-full max-w-4xl bg-neutral-900 border border-white/10 rounded-xl overflow-hidden shadow-2xl relative aspect-video md:aspect-[21/9]">
-                    {currentHeroMatch ? (
-                        <div className="absolute inset-0" key={currentHeroMatch.id}>
-                            {renderHeroContent(currentHeroMatch)}
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-gray-500 font-bold uppercase tracking-widest text-sm">
-                            No active fixtures
-                        </div>
-                    )}
-                    
-                    {/* Carousel Indicators */}
-                    {heroCount > 1 && (
-                        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                            {Array.from({ length: heroCount }).map((_, i) => (
-                                <div 
-                                    key={i} 
-                                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === heroIndex ? 'bg-white w-4' : 'bg-white/30'}`}
-                                ></div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+            {/* RIGHT PANEL: SIDEBAR / AGENDA (30% Width) */}
+            <div className="relative w-full md:w-[30%] h-[40vh] md:h-full bg-white border-l border-gray-100 flex flex-col z-20 shadow-2xl">
+                 {/* Header */}
+                 <div className="p-6 md:p-8 border-b border-gray-100 bg-gray-50/50">
+                     <div className="flex items-center justify-between mb-4">
+                         <Logo className="h-6" />
+                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{new Date().toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric'})}</span>
+                     </div>
+                     <h2 className="font-display font-bold text-3xl uppercase tracking-tight leading-none">Match Day<br/><span className="text-gray-400">Programme</span></h2>
+                 </div>
 
-                {/* 2. SECONDARY CARDS (Bottom List) */}
-                <div className="w-full max-w-4xl">
-                    <div className="flex justify-between items-end mb-3 border-b border-white/10 pb-1">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Other Fixtures</span>
-                        <span className="text-[9px] font-bold text-penrice-gold uppercase tracking-widest">
-                            {upcomingMatches.length > 0 ? 'Upcoming' : 'Results'}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                         {secondaryMatches.length === 0 && (
-                             <div className="col-span-3 text-center py-6 text-gray-600 text-xs italic border border-dashed border-white/10 rounded-lg">
-                                 No other matches scheduled.
-                             </div>
-                         )}
-                         {secondaryMatches.map(m => (
-                             <div key={m.id} className="bg-white/5 border border-white/10 p-4 rounded-lg hover:bg-white/10 transition-colors flex flex-col justify-between h-24 group cursor-pointer" onClick={() => setShowWelcome(false)}>
-                                 <div className="flex justify-between items-start">
+                 {/* Scrollable List */}
+                 <div className="flex-1 overflow-y-auto custom-scroll p-0">
+                     {secondaryMatches.length === 0 ? (
+                         <div className="p-8 text-center text-gray-400 text-xs font-bold uppercase tracking-widest italic">
+                             No other fixtures scheduled today.
+                         </div>
+                     ) : (
+                         secondaryMatches.map((m, i) => (
+                             <div key={m.id} className="group border-b border-gray-100 p-6 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setShowWelcome(false)}>
+                                 <div className="flex justify-between items-start mb-2">
                                      <span className="text-[9px] font-bold text-penrice-gold uppercase tracking-widest">{m.sport}</span>
-                                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase ${m.status==='LIVE' ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-700 text-gray-300'}`}>
-                                         {m.status === 'UPCOMING' ? 'SOON' : m.status}
+                                     <span className={`text-[9px] font-bold uppercase ${m.status === 'LIVE' ? 'text-red-600 animate-pulse' : 'text-gray-400'}`}>
+                                         {m.status === 'UPCOMING' ? m.time || 'Today' : m.status}
                                      </span>
                                  </div>
-                                 <div>
-                                     <div className="font-display font-bold text-lg text-white leading-none truncate group-hover:text-penrice-gold transition-colors">{m.opponent}</div>
-                                     <div className="text-xs text-gray-400 font-medium truncate mt-1">
-                                         {m.yearGroup} {m.league ? `• ${m.league}` : ''}
-                                     </div>
+                                 <div className="flex justify-between items-center">
+                                    <div className="flex flex-col">
+                                        <span className="font-display font-bold text-lg text-black uppercase leading-none group-hover:underline decoration-2 decoration-penrice-gold underline-offset-4">{m.opponent}</span>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase mt-1">{m.yearGroup}</span>
+                                    </div>
+                                    <div className="text-xl font-display font-bold text-gray-300 group-hover:text-black transition-colors">
+                                        {m.status === 'UPCOMING' ? 'VS' : `${m.homeScore}-${m.awayScore}`}
+                                    </div>
                                  </div>
                              </div>
-                         ))}
-                    </div>
-                </div>
+                         ))
+                     )}
+                 </div>
+
+                 {/* Footer Action */}
+                 <div className="p-6 md:p-8 border-t border-gray-100 bg-white">
+                     <button 
+                        onClick={() => setShowWelcome(false)}
+                        className="w-full bg-black text-white py-4 md:py-5 font-display font-bold text-lg uppercase tracking-widest hover:bg-penrice-gold hover:text-black transition-all flex items-center justify-center group"
+                     >
+                         Enter Match Centre
+                         <i className="fa-solid fa-arrow-right ml-3 text-sm group-hover:translate-x-1 transition-transform"></i>
+                     </button>
+                     <p className="text-center text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-4">
+                         Penrice Academy Official Sport
+                     </p>
+                 </div>
             </div>
+
         </div>
       );
   }

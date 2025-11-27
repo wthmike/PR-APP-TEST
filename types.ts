@@ -1,3 +1,4 @@
+
 export type SportType = 'cricket' | 'netball' | 'rugby';
 export type MatchStatus = 'UPCOMING' | 'LIVE' | 'FT' | 'RESULT';
 
@@ -37,6 +38,7 @@ export interface Match {
   status: MatchStatus;
   league?: string;
   yearGroup?: string;
+  time?: string; // Added optional time field
   sortOrder?: number; // For manual ordering
   lastUpdated: number;
   events: GameEvent[];

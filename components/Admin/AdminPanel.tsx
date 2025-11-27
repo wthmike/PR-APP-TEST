@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MatchesService } from '../../services/firebase';
 import { Match, SportType } from '../../types';
@@ -19,6 +20,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
   const [team, setTeam] = useState('Penrice Academy');
   const [opponent, setOpponent] = useState('');
   const [yearGroup, setYearGroup] = useState('Year 7');
+  const [time, setTime] = useState('');
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isReorderCollapsed, setIsReorderCollapsed] = useState(false);
@@ -49,6 +51,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
             teamName: team,
             opponent: opponent,
             yearGroup: yearGroup,
+            time: time,
             status: 'UPCOMING',
             league: 'School Fixture',
             lastUpdated: Date.now(),
@@ -75,6 +78,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
 
         await MatchesService.create(baseData);
         setOpponent('');
+        setTime('');
     } catch (err: any) {
         console.error("Create Match Error:", err);
         let msg = "Failed to create match.";
@@ -283,6 +287,12 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                                 onChange={(e) => setYearGroup(e.target.value)}
                             />
                             <input 
+                                className="flex-1 border border-gray-200 p-3 h-12 text-sm font-bold outline-none focus:border-black rounded-sm bg-gray-50"
+                                placeholder="Time (e.g. 15:30)"
+                                value={time}
+                                onChange={(e) => setTime(e.target.value)}
+                            />
+                            <input 
                                 className="flex-[2] border border-gray-200 p-3 h-12 text-sm font-bold outline-none focus:border-black rounded-sm bg-gray-50"
                                 value={team}
                                 onChange={(e) => setTeam(e.target.value)}
@@ -332,7 +342,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                             </div>
 
                             {/* Quick Settings */}
-                            <div className="grid grid-cols-2 gap-px bg-gray-100 border-b border-gray-100">
+                            <div className="grid grid-cols-3 gap-px bg-gray-100 border-b border-gray-100">
                                 <select 
                                     value={match.status} 
                                     onChange={(e) => MatchesService.update(match.id, { status: e.target.value })}
@@ -342,6 +352,12 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                                     <option value="LIVE">Live</option>
                                     <option value="FT">Full Time</option>
                                 </select>
+                                <input 
+                                    value={match.time || ''}
+                                    onChange={(e) => MatchesService.update(match.id, { time: e.target.value })}
+                                    className="p-3 h-12 text-xs font-bold outline-none bg-white text-center placeholder-gray-300"
+                                    placeholder="Time"
+                                />
                                 <input 
                                     value={match.league || ''}
                                     onChange={(e) => MatchesService.update(match.id, { league: e.target.value })}
