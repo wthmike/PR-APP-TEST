@@ -22,6 +22,10 @@ export default function App() {
   // View State
   const [viewMode, setViewMode] = useState<'live' | 'news'>('live');
   
+  // Filter State
+  const [sportFilter, setSportFilter] = useState<'all' | 'cricket' | 'netball' | 'rugby'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'LIVE' | 'UPCOMING' | 'FT'>('all');
+  
   // Admin State
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -74,6 +78,21 @@ export default function App() {
         unsubscribeAuth();
     };
   }, []);
+
+  // --- FILTERING LOGIC ---
+  const filteredMatches = matches.filter(m => {
+      // 1. Filter by Sport
+      const matchSport = sportFilter === 'all' || m.sport === sportFilter;
+      
+      // 2. Filter by Status
+      let matchStatus = true;
+      if (statusFilter === 'all') matchStatus = true;
+      else if (statusFilter === 'LIVE') matchStatus = m.status === 'LIVE';
+      else if (statusFilter === 'UPCOMING') matchStatus = m.status === 'UPCOMING';
+      else if (statusFilter === 'FT') matchStatus = m.status === 'FT' || m.status === 'RESULT';
+
+      return matchSport && matchStatus;
+  });
 
   // --- HERO CAROUSEL LOGIC ---
   const liveMatches = matches.filter(m => m.status === 'LIVE');
@@ -417,18 +436,59 @@ export default function App() {
              <>
                  {viewMode === 'live' ? (
                      <div className="space-y-6">
-                         <div className="mb-8 flex items-end gap-4 border-b-2 border-black pb-2">
-                            <span className="text-sm font-bold text-black uppercase tracking-widest">Today's Fixtures</span>
-                            <span className="text-[10px] font-mono text-gray-400 mb-0.5">LIVE UPDATES</span>
+                         
+                         {/* Filters Header */}
+                         <div className="mb-8 space-y-4">
+                            <div className="flex flex-col md:flex-row justify-between items-end border-b-2 border-black pb-2 gap-4">
+                                <div>
+                                    <span className="text-sm font-bold text-black uppercase tracking-widest">Today's Fixtures</span>
+                                     <div className="text-[10px] font-mono text-gray-400 mt-1">
+                                        Showing {filteredMatches.length} {sportFilter === 'all' ? '' : sportFilter} Match{filteredMatches.length !== 1 ? 'es' : ''}
+                                     </div>
+                                </div>
+
+                                {/* Status Filters */}
+                                <div className="flex gap-1">
+                                    {['all', 'LIVE', 'UPCOMING', 'FT'].map(s => (
+                                        <button 
+                                            key={s}
+                                            onClick={() => setStatusFilter(s as any)}
+                                            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors rounded-sm ${statusFilter === s ? 'bg-black text-white' : 'text-gray-400 hover:text-black hover:bg-gray-50'}`}
+                                        >
+                                            {s === 'all' ? 'All' : (s === 'FT' ? 'Results' : s)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Sport Filters - Tab Style */}
+                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                 {['all', 'cricket', 'netball', 'rugby'].map(s => (
+                                     <button
+                                        key={s}
+                                        onClick={() => setSportFilter(s as any)}
+                                        className={`flex items-center gap-2 px-4 py-2 border rounded-sm transition-all text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${sportFilter === s ? 'bg-penrice-gold border-penrice-gold text-black shadow-sm' : 'bg-white border-gray-200 text-gray-500 hover:border-black'}`}
+                                     >
+                                         {s === 'all' && <i className="fa-solid fa-layer-group"></i>}
+                                         {s === 'cricket' && <span>🏏</span>}
+                                         {s === 'netball' && <span>🏐</span>}
+                                         {s === 'rugby' && <span>🏉</span>}
+                                         {s === 'all' ? 'All Sports' : s}
+                                     </button>
+                                 ))}
+                            </div>
                          </div>
                          
-                         {matches.length === 0 && !loading && (
-                            <div className="flex flex-col items-center justify-center py-32 border border-dashed border-gray-300">
-                                <h3 className="text-2xl font-display font-bold text-gray-300 uppercase tracking-widest">No Active Matches</h3>
+                         {/* Empty State */}
+                         {filteredMatches.length === 0 && !loading && (
+                            <div className="flex flex-col items-center justify-center py-20 bg-gray-50 border border-dashed border-gray-300 rounded-sm">
+                                <i className="fa-solid fa-filter text-2xl text-gray-300 mb-2"></i>
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">No matches found</h3>
+                                <button onClick={() => { setSportFilter('all'); setStatusFilter('all'); }} className="mt-4 text-[10px] font-bold text-black underline uppercase">Clear Filters</button>
                             </div>
                          )}
 
-                         {matches.map(match => {
+                         {filteredMatches.map(match => {
                             if (match.sport === 'netball') return <NetballCard key={match.id} match={match} allMatches={matches} />;
                             if (match.sport === 'rugby') return <RugbyCard key={match.id} match={match} allMatches={matches} />;
                             return <CricketCard key={match.id} match={match} allMatches={matches} />;

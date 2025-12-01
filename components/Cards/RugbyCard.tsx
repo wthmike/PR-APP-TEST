@@ -139,9 +139,6 @@ export const RugbyCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ ma
   const homeColor = match.homeTeamColor || '#000000';
   const awayColor = match.awayTeamColor || '#ffffff';
   
-  const homeTextColor = getContrastYIQ(homeColor);
-  const awayTextColor = getContrastYIQ(awayColor);
-
   useEffect(() => {
       if(match.events && match.events.length > 0) {
           // Logic for celebration triggers could go here
@@ -181,33 +178,38 @@ export const RugbyCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ ma
         </div>
       </div>
 
-      {/* Dynamic Scoreboard - Split Design */}
+      {/* Dynamic Scoreboard - Editorial/Subtle Design */}
       <div 
-        className="cursor-pointer relative min-h-[180px] flex items-center overflow-hidden" 
+        className="cursor-pointer relative min-h-[160px] flex items-stretch overflow-hidden bg-white" 
         onClick={() => setExpanded(!expanded)}
-        style={{ background: `linear-gradient(90deg, ${homeColor} 50%, ${awayColor} 50%)` }}
       >
          {/* Home Team (Left) */}
-         <div className={`flex-1 flex flex-col items-center justify-center p-4 pr-12 relative z-10 ${homeTextColor === 'white' ? 'text-white' : 'text-black'}`}>
-            <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-1 opacity-90 text-center">{match.teamName}</div>
-            <div className="font-display font-bold text-8xl md:text-9xl tracking-tighter drop-shadow-xl">{match.homeScore}</div>
+         <div className="flex-1 flex flex-col items-center justify-center p-6 relative border-r border-gray-100">
+             {/* Color Strip */}
+            <div className="absolute left-0 top-0 bottom-0 w-3" style={{ backgroundColor: homeColor }}></div>
+            
+            <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-3 text-center text-black px-4">{match.teamName}</div>
+            <div className="font-display font-bold text-7xl md:text-8xl tracking-tighter text-black">{match.homeScore}</div>
+         </div>
+
+         {/* Center VS Element */}
+         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+             <div className="w-10 h-10 bg-gray-50 rotate-45 flex items-center justify-center border-4 border-white shadow-md">
+                 <div className="-rotate-45 font-display font-bold text-gray-300 text-xs">VS</div>
+             </div>
          </div>
 
          {/* Away Team (Right) */}
-         <div className={`flex-1 flex flex-col items-center justify-center p-4 pl-12 relative z-10 ${awayTextColor === 'white' ? 'text-white' : 'text-black'}`}>
-            <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-1 opacity-80 text-center">{match.opponent}</div>
-            <div className="font-display font-bold text-8xl md:text-9xl tracking-tighter">{match.awayScore}</div>
-         </div>
-
-         {/* Central "VS" Diamond Badge */}
-         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-             <div className="w-12 h-12 bg-penrice-gold rotate-45 flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
-                 <div className="-rotate-45 font-display font-bold text-black text-sm">VS</div>
-             </div>
+         <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+             {/* Color Strip */}
+            <div className="absolute right-0 top-0 bottom-0 w-3" style={{ backgroundColor: awayColor }}></div>
+            
+            <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-3 text-center text-black px-4">{match.opponent}</div>
+            <div className="font-display font-bold text-7xl md:text-8xl tracking-tighter text-black">{match.awayScore}</div>
          </div>
          
-         {/* Overlay Pattern for texture */}
-         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+         {/* Subtle Texture Overlay */}
+         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
       </div>
 
       {/* Last Action Strip (Ticker) - High Impact */}
