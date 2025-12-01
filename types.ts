@@ -9,6 +9,7 @@ export interface GameEvent {
   desc: string;
   duckType?: 'golden' | 'regular' | null;
   team?: 'home' | 'away';
+  assist?: string;
 }
 
 export interface PlayerStats {

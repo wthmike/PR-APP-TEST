@@ -37,7 +37,7 @@ export const FootballLogic = {
         });
     },
 
-    addGoal: async (match: Match, isHome: boolean, player: string, time: string) => {
+    addGoal: async (match: Match, isHome: boolean, player: string, assist: string, time: string) => {
         const field = isHome ? 'homeScore' : 'awayScore';
         const currentScore = (isHome ? match.homeScore : match.awayScore) || 0;
         
@@ -54,6 +54,8 @@ export const FootballLogic = {
         }
 
         const teamName = isHome ? match.teamName : match.opponent;
+        let desc = `GOAL! ${player ? player : teamName} scores!`;
+        if (assist) desc += ` (Ast: ${assist})`;
         
         await MatchesService.update(match.id, {
             [field]: currentScore + 1,
@@ -62,8 +64,9 @@ export const FootballLogic = {
             events: [...(match.events || []), {
                 type: 'GOAL',
                 player: player || teamName,
+                assist: assist || undefined,
                 time: time || match.period || '', 
-                desc: `GOAL! ${player ? player : teamName} scores for ${teamName}!`,
+                desc: desc,
                 team: isHome ? 'home' : 'away'
             }]
         });

@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Match, GameEvent } from '../../types';
+import { Match, GameEvent, PlayerStats } from '../../types';
 import { Badge, getContrastYIQ } from '../Shared';
 import { Marquee } from '../Layout/Marquee';
 
-// Reusable Possession Bar Component
+// --- Components ---
+
 const PossessionBar = ({ match, theme = 'dark' }: { match: Match, theme?: 'dark' | 'light' }) => {
     if (!match.footballStats?.enableAdvancedStats) return null;
 
@@ -31,60 +33,118 @@ const PossessionBar = ({ match, theme = 'dark' }: { match: Match, theme?: 'dark'
     const homePct = totalTime === 0 ? 50 : Math.round((homeTime / totalTime) * 100);
     const awayPct = 100 - homePct;
 
-    const barBg = theme === 'dark' ? 'bg-white/10' : 'bg-gray-100';
+    const barBg = theme === 'dark' ? 'bg-white/10' : 'bg-gray-200';
     const textCol = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+    const numCol = theme === 'dark' ? 'text-white' : 'text-black';
 
     return (
-        <div className="mb-4">
-            <div className={`flex justify-between text-xs font-bold uppercase ${textCol} mb-2`}>
-                <span>{homePct}%</span>
+        <div className="w-full">
+            <div className={`flex justify-between text-[10px] font-bold uppercase ${textCol} mb-1`}>
+                <span className={numCol}>{homePct}%</span>
                 <span>Possession</span>
-                <span>{awayPct}%</span>
+                <span className={numCol}>{awayPct}%</span>
             </div>
-            <div className={`h-3 w-full ${barBg} rounded-full overflow-hidden flex`}>
+            <div className={`h-2 w-full ${barBg} rounded-full overflow-hidden flex`}>
                 <div 
                     style={{ width: `${homePct}%`, backgroundColor: match.homeTeamColor || '#000' }} 
-                    className="h-full transition-all duration-1000 ease-linear"
-                ></div>
+                    className="h-full transition-all duration-1000 ease-linear relative"
+                >
+                    <div className="absolute inset-0 bg-white/10"></div>
+                </div>
                 <div 
                     style={{ width: `${awayPct}%`, backgroundColor: match.awayTeamColor || '#ccc' }} 
-                    className="h-full transition-all duration-1000 ease-linear"
-                ></div>
+                    className="h-full transition-all duration-1000 ease-linear relative"
+                >
+                    <div className="absolute inset-0 bg-black/5"></div>
+                </div>
             </div>
         </div>
     );
 };
 
-// Reusable Stat Row
 const StatRow = ({ label, homeVal, awayVal, theme = 'dark' }: { label: string, homeVal: number, awayVal: number, theme?: 'dark' | 'light' }) => {
     const total = homeVal + awayVal;
     const homePct = total === 0 ? 50 : (homeVal / total) * 100;
     
-    const barBg = theme === 'dark' ? 'bg-white/10' : 'bg-gray-100';
-    const fillBase = theme === 'dark' ? 'bg-white/80' : 'bg-black/80';
-    const fillFade = theme === 'dark' ? 'bg-white/30' : 'bg-black/30';
-    const textCol = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+    const barBg = theme === 'dark' ? 'bg-white/5' : 'bg-gray-100';
+    const fillHome = theme === 'dark' ? 'bg-white' : 'bg-black';
+    const fillAway = theme === 'dark' ? 'bg-gray-600' : 'bg-gray-400';
+    const textCol = theme === 'dark' ? 'text-gray-500' : 'text-gray-400';
+    const numCol = theme === 'dark' ? 'text-white' : 'text-black';
 
     return (
-        <div className="mb-3">
-            <div className={`flex justify-between text-xs font-bold uppercase ${textCol} mb-1`}>
-                <span>{homeVal}</span>
+        <div className="w-full">
+            <div className={`flex justify-between text-[10px] font-bold uppercase ${textCol} mb-1`}>
+                <span className={numCol}>{homeVal}</span>
                 <span>{label}</span>
-                <span>{awayVal}</span>
+                <span className={numCol}>{awayVal}</span>
             </div>
-            <div className={`h-1.5 ${barBg} rounded-full overflow-hidden flex`}>
-                <div style={{ width: `${homePct}%` }} className={`${fillBase} h-full`}></div>
-                <div style={{ width: `${100 - homePct}%` }} className={`${fillFade} h-full`}></div>
+            <div className={`h-1 w-full ${barBg} flex gap-0.5`}>
+                <div style={{ width: `${homePct}%` }} className={`${fillHome} h-full rounded-l-full transition-all duration-500`}></div>
+                <div style={{ width: `${100 - homePct}%` }} className={`${fillAway} h-full rounded-r-full transition-all duration-500`}></div>
             </div>
         </div>
     );
 };
+
+const LineupList = ({ players, teamName, color, align = 'left' }: { players?: PlayerStats[], teamName: string, color: string, align?: 'left' | 'right' }) => {
+    const starters = players?.filter(p => p.status === 'starting') || [];
+    const subs = players?.filter(p => p.status === 'sub') || [];
+
+    const alignClass = align === 'right' ? 'text-right items-end' : 'text-left items-start';
+
+    return (
+        <div className={`flex flex-col ${alignClass} h-full`}>
+            <div className={`mb-6 pb-2 border-b border-white/10 w-full ${align === 'right' ? 'flex flex-col items-end' : ''}`}>
+                 <h3 className="font-display font-bold text-2xl uppercase tracking-tighter text-white leading-none mb-1">{teamName}</h3>
+                 <div className="h-1 w-12" style={{ backgroundColor: color }}></div>
+            </div>
+            
+            <div className={`flex-1 overflow-y-auto custom-scroll w-full space-y-1 ${align === 'right' ? 'pr-2' : 'pl-2'}`}>
+                {starters.length === 0 && <div className="text-gray-600 text-xs uppercase tracking-widest italic">No Lineup Available</div>}
+                
+                {starters.map((p, i) => (
+                    <div key={i} className={`py-1.5 border-b border-white/5 flex items-center gap-3 group ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <span className="font-mono text-gray-600 text-[10px] group-hover:text-penrice-gold transition-colors">{i+1}</span>
+                        <span className="text-sm font-medium text-gray-300 uppercase tracking-tight group-hover:text-white transition-colors">{p.name}</span>
+                        {p.dismissal && (
+                            <div className="flex gap-1">
+                                {p.dismissal.includes('Yellow') && <div className="w-2 h-3 bg-yellow-400 rounded-[1px]"></div>}
+                                {p.dismissal.includes('Red') && <div className="w-2 h-3 bg-red-600 rounded-[1px]"></div>}
+                            </div>
+                        )}
+                        {p.runs > 0 && ( // Goals
+                            <div className="flex gap-1">
+                                {Array.from({length: p.runs}).map((_, g) => (
+                                    <span key={g} className="text-[10px]">⚽</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ))}
+
+                {subs.length > 0 && (
+                    <div className="mt-6">
+                        <h4 className={`text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ${align === 'right' ? 'text-right' : 'text-left'}`}>Substitutes</h4>
+                        {subs.map((p, i) => (
+                            <div key={`sub-${i}`} className={`py-1 flex items-center gap-3 ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <span className="text-xs text-gray-500 uppercase tracking-tight">{p.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// --- Presentation Overlay ---
 
 const FootballPresentationOverlay = ({ match, allMatches, celebration, onClose }: { match: Match, allMatches?: Match[], celebration: {type: string, text: string} | null, onClose: () => void }) => {
     const homeColor = match.homeTeamColor || '#000000';
     const awayColor = match.awayTeamColor || '#ffffff';
     
-    // Robust Filtering using Team Tag OR Fallback to Name
+    // Robust Filtering for Events
     const isHomeEvent = (e: GameEvent) => {
         if (e.team === 'home') return true;
         if (e.team === 'away') return false;
@@ -98,133 +158,142 @@ const FootballPresentationOverlay = ({ match, allMatches, celebration, onClose }
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-neutral-900 text-white flex flex-col font-sans overflow-hidden h-screen w-screen">
+        <div className="fixed inset-0 z-[9999] bg-black text-white flex flex-col font-sans overflow-hidden">
              {/* Celebration Overlay */}
              {celebration && (
-                <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in">
+                <div className="absolute inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in">
                     <div className="text-center animate-pop-in relative">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/10 rounded-full blur-[80px] animate-pulse"></div>
-                        <div className="relative text-[12vw] font-display font-bold leading-none italic uppercase tracking-tighter text-white drop-shadow-[0_20px_20px_rgba(0,0,0,0.8)]">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-penrice-gold/10 rounded-full blur-[80px] animate-pulse"></div>
+                        <div className="relative text-[8vw] font-display font-bold leading-none italic uppercase tracking-tighter text-white drop-shadow-2xl">
                             {celebration.type}
                         </div>
-                        <div className="text-4xl md:text-5xl font-display font-bold text-green-500 uppercase tracking-[0.2em] mt-4 border-t border-white/20 pt-6">
+                        <div className="text-3xl md:text-5xl font-display font-bold text-penrice-gold uppercase tracking-[0.2em] mt-4 border-t border-white/20 pt-6">
                             {celebration.text}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Split Background */}
+            {/* Background Layers */}
             <div className="absolute inset-0 flex">
-                <div style={{ backgroundColor: homeColor }} className="w-1/2 h-full opacity-20 relative">
-                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-neutral-900"></div>
+                <div className="w-1/2 h-full bg-gradient-to-r from-neutral-900 to-black relative">
+                     <div className="absolute inset-0 opacity-20 mix-blend-color" style={{ backgroundColor: homeColor }}></div>
                 </div>
-                <div style={{ backgroundColor: awayColor }} className="w-1/2 h-full opacity-20 relative">
-                     <div className="absolute inset-0 bg-gradient-to-l from-transparent to-neutral-900"></div>
+                <div className="w-1/2 h-full bg-gradient-to-l from-neutral-900 to-black relative">
+                    <div className="absolute inset-0 opacity-20 mix-blend-color" style={{ backgroundColor: awayColor }}></div>
                 </div>
             </div>
-            
-            {/* Pattern Overlay */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
 
             {/* Header */}
-            <div className="h-20 flex justify-between items-center px-12 relative z-20 border-b border-white/5 bg-black/20 backdrop-blur-sm">
-                <div className="flex items-center gap-4">
-                     <div className="bg-white text-black px-4 py-1 text-xs font-bold uppercase tracking-widest">Match Day Live</div>
-                     <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-mono font-bold text-gray-300 uppercase">{match.period || '1st Half'}</span>
+            <div className="relative z-30 h-16 flex justify-between items-center px-8 border-b border-white/10 bg-black/50 backdrop-blur-md">
+                 <div className="flex items-center gap-4">
+                     <div className="bg-white text-black px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-sm">Match Day Live</div>
+                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{match.league} • {match.yearGroup}</span>
+                 </div>
+                 <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/20 transition-colors">
+                     <i className="fa-solid fa-xmark text-gray-400"></i>
+                 </button>
+            </div>
+
+            {/* Main Layout - 3 Columns */}
+            <div className="relative z-20 flex-1 grid grid-cols-12 gap-0 overflow-hidden">
+                
+                {/* LEFT: Home Lineup */}
+                <div className="col-span-3 bg-black/20 border-r border-white/5 p-8 pt-10 backdrop-blur-sm">
+                    <LineupList players={match.homeTeamStats} teamName={match.teamName} color={homeColor} align="left" />
+                </div>
+
+                {/* CENTER: Scoreboard & Stats */}
+                <div className="col-span-6 flex flex-col relative">
+                     
+                     {/* Scoreboard */}
+                     <div className="flex-1 flex flex-col justify-center items-center">
+                         
+                         {/* Clock/Status Pill */}
+                         <div className="mb-8 bg-neutral-900/80 border border-white/10 px-6 py-2 rounded-full shadow-xl flex items-center gap-3">
+                             {match.status === 'LIVE' && <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>}
+                             <span className="font-mono font-bold text-lg text-white uppercase tracking-widest">{match.period || 'KO'}</span>
+                         </div>
+
+                         {/* Scores */}
+                         <div className="flex items-center justify-center w-full gap-12 mb-8">
+                             <div className="text-center">
+                                 <div className="text-[10rem] font-display font-bold leading-[0.8] tracking-tighter text-white drop-shadow-2xl tabular-nums">{match.homeScore}</div>
+                             </div>
+                             <div className="h-32 w-px bg-white/10 skew-x-[-20deg]"></div>
+                             <div className="text-center">
+                                 <div className="text-[10rem] font-display font-bold leading-[0.8] tracking-tighter text-white drop-shadow-2xl tabular-nums">{match.awayScore}</div>
+                             </div>
+                         </div>
+
+                         {/* Match Events (Goals + Cards) */}
+                         <div className="w-full max-w-lg flex justify-between px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-12">
+                             <div className="text-left space-y-1">
+                                 {match.events?.filter(e => ['GOAL', 'YEL', 'RED'].includes(e.type) && isHomeEvent(e)).map((e, i) => (
+                                     <div key={i} className="flex items-center gap-2">
+                                         {e.type === 'GOAL' && (
+                                            <>
+                                                <span className="text-green-400">⚽</span> 
+                                                <span className="text-green-400">
+                                                    {e.player} {e.time}
+                                                    {e.assist && <span className="text-gray-500 text-[9px] ml-1 block">Ast: {e.assist}</span>}
+                                                </span>
+                                            </>
+                                         )}
+                                         {e.type === 'YEL' && <><div className="w-2 h-3 bg-yellow-400 rounded-[1px]"></div> <span className="text-yellow-400">{e.player} {e.time}</span></>}
+                                         {e.type === 'RED' && <><div className="w-2 h-3 bg-red-600 rounded-[1px]"></div> <span className="text-red-600">{e.player} {e.time}</span></>}
+                                     </div>
+                                 ))}
+                             </div>
+                             <div className="text-right space-y-1">
+                                 {match.events?.filter(e => ['GOAL', 'YEL', 'RED'].includes(e.type) && isAwayEvent(e)).map((e, i) => (
+                                     <div key={i} className="flex items-center justify-end gap-2">
+                                         {e.type === 'GOAL' && (
+                                            <>
+                                                <span className="text-green-400">
+                                                    {e.player} {e.time}
+                                                    {e.assist && <span className="text-gray-500 text-[9px] mr-1 block">Ast: {e.assist}</span>}
+                                                </span> 
+                                                <span className="text-green-400">⚽</span>
+                                            </>
+                                         )}
+                                         {e.type === 'YEL' && <><span className="text-yellow-400">{e.player} {e.time}</span> <div className="w-2 h-3 bg-yellow-400 rounded-[1px]"></div></>}
+                                         {e.type === 'RED' && <><span className="text-red-600">{e.player} {e.time}</span> <div className="w-2 h-3 bg-red-600 rounded-[1px]"></div></>}
+                                     </div>
+                                 ))}
+                             </div>
+                         </div>
+
+                         {/* Live Stats Panel */}
+                         <div className="w-full max-w-md bg-black/40 border border-white/10 p-6 rounded-sm backdrop-blur-md">
+                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">Live Match Stats</h4>
+                             <div className="space-y-4">
+                                 <PossessionBar match={match} theme="dark" />
+                                 <div className="grid grid-cols-2 gap-8">
+                                     <StatRow label="Corners" homeVal={match.footballStats?.homeCorners || 0} awayVal={match.footballStats?.awayCorners || 0} theme="dark" />
+                                     <StatRow label="Fouls" homeVal={match.footballStats?.homeFouls || 0} awayVal={match.footballStats?.awayFouls || 0} theme="dark" />
+                                 </div>
+                             </div>
+                         </div>
                      </div>
                 </div>
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 text-gray-400 transition-colors">
-                    <i className="fa-solid fa-xmark"></i>
-                </button>
-            </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col relative z-10 px-8 py-8">
-                
-                {/* Scoreboard Section */}
-                <div className="flex-1 flex items-center justify-center w-full mb-8">
-                    <div className="flex items-center justify-between w-full max-w-7xl">
-                        
-                        {/* Home Team */}
-                        <div className="flex-1 text-right pr-12">
-                            <h2 className="text-5xl md:text-7xl font-display font-bold uppercase tracking-tight text-white mb-4 drop-shadow-lg">{match.teamName}</h2>
-                            <div className="flex flex-col items-end space-y-2">
-                                {match.events?.filter(e => e.type === 'GOAL' && isHomeEvent(e)).map((e, i) => (
-                                    <span key={i} className="text-sm md:text-lg text-green-400 font-bold uppercase flex items-center gap-3">
-                                        {e.player} <span className="bg-green-400 text-black px-1.5 py-0.5 rounded text-xs">{e.time}</span>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Score Center */}
-                        <div className="bg-neutral-950/80 backdrop-blur-xl border border-white/10 px-12 py-8 rounded-sm shadow-2xl flex items-center gap-8 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                            <span className="text-8xl md:text-9xl font-display font-bold text-white leading-none tabular-nums">{match.homeScore}</span>
-                            <div className="h-20 w-px bg-white/20"></div>
-                            <span className="text-8xl md:text-9xl font-display font-bold text-white leading-none tabular-nums">{match.awayScore}</span>
-                        </div>
-
-                        {/* Away Team */}
-                        <div className="flex-1 text-left pl-12">
-                             <h2 className="text-5xl md:text-7xl font-display font-bold uppercase tracking-tight text-white mb-4 drop-shadow-lg">{match.opponent}</h2>
-                             <div className="flex flex-col items-start space-y-2">
-                                {match.events?.filter(e => e.type === 'GOAL' && isAwayEvent(e)).map((e, i) => (
-                                    <span key={i} className="text-sm md:text-lg text-green-400 font-bold uppercase flex items-center gap-3">
-                                        <span className="bg-green-400 text-black px-1.5 py-0.5 rounded text-xs">{e.time}</span> {e.player}
-                                    </span>
-                                ))}
-                             </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                {/* Stats & Timeline Grid */}
-                <div className="h-64 grid grid-cols-12 gap-8 w-full max-w-7xl mx-auto">
-                    {/* Stats */}
-                    <div className="col-span-5 bg-black/40 border border-white/5 p-6 rounded-sm backdrop-blur-md flex flex-col justify-center">
-                        <PossessionBar match={match} theme="dark" />
-                        <StatRow label="Corners" homeVal={match.footballStats?.homeCorners || 0} awayVal={match.footballStats?.awayCorners || 0} theme="dark" />
-                        <StatRow label="Fouls" homeVal={match.footballStats?.homeFouls || 0} awayVal={match.footballStats?.awayFouls || 0} theme="dark" />
-                        <StatRow label="Cards (Y/R)" homeVal={(match.footballStats?.homeYellows||0)+(match.footballStats?.homeReds||0)} awayVal={(match.footballStats?.awayYellows||0)+(match.footballStats?.awayReds||0)} theme="dark" />
-                    </div>
-
-                    {/* Timeline Feed */}
-                    <div className="col-span-7 bg-black/40 border border-white/5 p-6 rounded-sm backdrop-blur-md overflow-hidden flex flex-col">
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Match Events</h4>
-                        <div className="flex-1 overflow-y-auto custom-scroll pr-2">
-                            {[...(match.events || [])].reverse().map((e, i) => {
-                                let icon = '•';
-                                let color = 'text-gray-400';
-                                if (e.type === 'GOAL') { icon = '⚽'; color = 'text-green-500'; }
-                                if (e.type === 'YEL') { icon = '🟨'; color = 'text-yellow-400'; }
-                                if (e.type === 'RED') { icon = '🟥'; color = 'text-red-500'; }
-                                return (
-                                    <div key={i} className="mb-3 flex gap-4 items-center animate-fade-in-up">
-                                        <div className="font-mono text-xs text-gray-500 w-8">{e.time}</div>
-                                        <div className={`text-sm font-bold uppercase ${color} flex items-center gap-2 flex-1`}>
-                                            <span>{icon}</span> {e.type} 
-                                            <span className="text-white text-xs ml-2 font-medium normal-case opacity-80">{e.desc}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
+                {/* RIGHT: Away Lineup */}
+                <div className="col-span-3 bg-black/20 border-l border-white/5 p-8 pt-10 backdrop-blur-sm">
+                    <LineupList players={match.awayTeamStats} teamName={match.opponent} color={awayColor} align="right" />
                 </div>
             </div>
 
-             {/* Footer Ticker */}
+            {/* Bottom Ticker */}
             <div className="relative z-50">
                 {allMatches && <Marquee matches={allMatches} />}
             </div>
         </div>
     );
 };
+
+// --- Main Card ---
 
 export const FootballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({ match, allMatches }) => {
   const [expanded, setExpanded] = useState(false);
@@ -272,25 +341,35 @@ export const FootballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({
         </div>
       </div>
 
-      {/* Main Scoreboard */}
-      <div className="cursor-pointer relative min-h-[160px] flex items-stretch overflow-hidden bg-white" onClick={() => setExpanded(!expanded)}>
+      {/* Main Scoreboard - Responsive Fixes */}
+      <div className="cursor-pointer relative min-h-[140px] md:min-h-[160px] flex overflow-hidden bg-white" onClick={() => setExpanded(!expanded)}>
+         
          {/* Home */}
-         <div className="flex-1 flex flex-col items-center justify-center p-6 relative border-r border-gray-100">
-            <div className="absolute left-0 top-0 bottom-0 w-3" style={{ backgroundColor: homeColor }}></div>
-            <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-3 text-center text-black px-4">{match.teamName}</div>
-            <div className="font-display font-bold text-7xl md:text-8xl tracking-tighter text-black">{match.homeScore}</div>
+         <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 relative border-r border-gray-100">
+            <div className="absolute left-0 top-0 bottom-0 w-2 md:w-3" style={{ backgroundColor: homeColor }}></div>
+            <div className="font-display font-bold text-xl md:text-3xl uppercase tracking-tighter leading-tight mb-2 text-center text-black px-2 md:px-4 break-words w-full line-clamp-2">
+                {match.teamName}
+            </div>
+            <div className="font-display font-bold text-5xl md:text-8xl tracking-tighter text-black leading-none">{match.homeScore}</div>
          </div>
+
+         {/* Center VS Element */}
          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-             <div className="w-10 h-10 bg-gray-50 rotate-45 flex items-center justify-center border-4 border-white shadow-md">
-                 <div className="-rotate-45 font-display font-bold text-gray-300 text-xs">VS</div>
+             <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-50 rotate-45 flex items-center justify-center border-2 md:border-4 border-white shadow-md">
+                 <div className="-rotate-45 font-display font-bold text-gray-300 text-[10px] md:text-xs">VS</div>
              </div>
          </div>
+
          {/* Away */}
-         <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-            <div className="absolute right-0 top-0 bottom-0 w-3" style={{ backgroundColor: awayColor }}></div>
-            <div className="font-display font-bold text-2xl md:text-3xl uppercase tracking-tighter leading-none mb-3 text-center text-black px-4">{match.opponent}</div>
-            <div className="font-display font-bold text-7xl md:text-8xl tracking-tighter text-black">{match.awayScore}</div>
+         <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 relative">
+            <div className="absolute right-0 top-0 bottom-0 w-2 md:w-3" style={{ backgroundColor: awayColor }}></div>
+            <div className="font-display font-bold text-xl md:text-3xl uppercase tracking-tighter leading-tight mb-2 text-center text-black px-2 md:px-4 break-words w-full line-clamp-2">
+                {match.opponent}
+            </div>
+            <div className="font-display font-bold text-5xl md:text-8xl tracking-tighter text-black leading-none">{match.awayScore}</div>
          </div>
+         
+         {/* Texture */}
          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
       </div>
 
@@ -329,23 +408,65 @@ export const FootballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({
          <div className="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
              <span className="text-[10px] font-bold text-black uppercase tracking-widest">Match Timeline</span>
          </div>
-         <div className="p-6 h-64 overflow-y-auto custom-scroll">
-             {[...(match.events || [])].reverse().map((e, idx) => (
-                <div key={idx} className="relative pl-8 pb-8 last:pb-0">
-                    <div className="absolute left-[5px] top-0 bottom-0 w-px bg-gray-200"></div>
-                    <div className={`absolute left-[2px] top-2 w-2 h-2 border transform rotate-45 z-10 ${e.type === 'GOAL' ? 'bg-green-600 border-green-600' : 'bg-white border-gray-300'}`}></div>
-                    <div className="flex items-start gap-4">
-                        <div className="font-mono text-[10px] font-bold text-gray-400 w-8 pt-1">{e.time}</div>
-                        <div className="flex-1">
-                            <div className="text-xs font-bold text-black uppercase flex flex-wrap items-center">
-                                <span className={`mr-2 px-1.5 py-0.5 text-[9px] font-bold border rounded-sm ${e.type === 'GOAL' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-black border-black'}`}>{e.type}</span>
-                                {e.player}
+         
+         <div className="p-4 h-80 overflow-y-auto custom-scroll relative">
+            {/* Central Spine */}
+            <div className="absolute left-1/2 top-4 bottom-4 w-px bg-gray-200 -translate-x-1/2"></div>
+            
+            {match.events && match.events.length === 0 && (
+                 <div className="text-center py-12 text-gray-300 text-xs font-bold uppercase tracking-widest absolute inset-0 flex items-center justify-center">
+                    Kick Off Pending...
+                </div>
+            )}
+
+            {[...(match.events || [])].reverse().map((e, idx) => {
+                let side = 'left'; 
+                // Determine side based on team property if available, otherwise heuristic
+                if (e.team === 'away') side = 'right';
+                else if (e.team === 'home') side = 'left';
+                else if (match.awayTeamStats?.some(p => p.name === e.player) || e.player === match.opponent) side = 'right';
+                
+                const isLeft = side === 'left';
+                const typeColor = e.type === 'GOAL' ? 'bg-green-600 border-green-600 text-white' : 
+                                  (e.type === 'RED' ? 'bg-red-600 border-red-600 text-white' : 
+                                  (e.type === 'YEL' ? 'bg-yellow-400 border-yellow-400 text-black' : 
+                                  'bg-white border-gray-300 text-black'));
+
+                return (
+                    <div key={idx} className="flex items-center w-full mb-6 relative group">
+                        {/* Left Content (Home) */}
+                        <div className={`w-1/2 pr-8 text-right flex flex-col items-end ${!isLeft ? 'invisible' : ''}`}>
+                            <span className="font-mono text-[10px] font-bold text-gray-400 mb-1">{e.time}</span>
+                            <div className="flex items-center justify-end gap-2 mb-1">
+                                <span className="text-xs font-bold text-black uppercase">{e.player}</span>
+                                <span className={`px-1.5 py-px text-[9px] font-bold border rounded-sm ${typeColor}`}>{e.type}</span>
                             </div>
-                            {e.desc && <div className="text-xs text-gray-500 mt-1">{e.desc}</div>}
+                            <div className="text-[10px] text-gray-500 leading-tight">
+                                {e.desc}
+                                {e.assist && <span className="block text-gray-400 italic">Ast: {e.assist}</span>}
+                            </div>
+                        </div>
+
+                        {/* Center Icon */}
+                        <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
+                            <div className={`w-3 h-3 border-2 rotate-45 transition-transform group-hover:scale-125 ${typeColor}`}></div>
+                        </div>
+
+                        {/* Right Content (Away) */}
+                        <div className={`w-1/2 pl-8 text-left flex flex-col items-start ${isLeft ? 'invisible' : ''}`}>
+                            <span className="font-mono text-[10px] font-bold text-gray-400 mb-1">{e.time}</span>
+                            <div className="flex items-center justify-start gap-2 mb-1">
+                                <span className={`px-1.5 py-px text-[9px] font-bold border rounded-sm ${typeColor}`}>{e.type}</span>
+                                <span className="text-xs font-bold text-black uppercase">{e.player}</span>
+                            </div>
+                            <div className="text-[10px] text-gray-500 leading-tight">
+                                {e.desc}
+                                {e.assist && <span className="block text-gray-400 italic">Ast: {e.assist}</span>}
+                            </div>
                         </div>
                     </div>
-                </div>
-             ))}
+                );
+            })}
          </div>
       </div>
       

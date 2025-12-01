@@ -18,6 +18,7 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
   const [actionModal, setActionModal] = useState<{type: 'GOAL'|'YELLOW'|'RED', isHome: boolean} | null>(null);
   const [actionTime, setActionTime] = useState('');
   const [actionPlayer, setActionPlayer] = useState('');
+  const [actionAssist, setActionAssist] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const updatePlayerName = (isHome: boolean, index: number, value: string) => {
@@ -58,6 +59,7 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
       setActionModal({ type, isHome });
       setActionTime('');
       setActionPlayer('');
+      setActionAssist('');
   };
 
   const confirmAction = async () => {
@@ -67,7 +69,7 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
 
       try {
           if (actionModal.type === 'GOAL') {
-              await FootballLogic.addGoal(match, actionModal.isHome, actionPlayer, formattedTime);
+              await FootballLogic.addGoal(match, actionModal.isHome, actionPlayer, actionAssist, formattedTime);
           } else {
               await FootballLogic.addCard(match, actionModal.isHome, actionModal.type === 'YELLOW' ? 'Yellow' : 'Red', actionPlayer, formattedTime);
           }
@@ -128,7 +130,7 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
                  />
                  <div>
                      <label htmlFor="advStats" className="text-xs font-bold uppercase block text-black">Enable Advanced Stats</label>
-                     <span className="text-[10px] text-gray-500">Includes live possession tracking and detailed match analysis.</span>
+                     <span className="text-[10px] text-gray-500">Includes live possession tracking, foul counts, and detailed match analysis.</span>
                  </div>
              </div>
 
@@ -139,6 +141,7 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
 
   const periods = ['1st Half', 'Half Time', '2nd Half', 'FT'];
   const posStatus = match.footballStats?.possessionStatus || 'neutral';
+  const showAdvanced = match.footballStats?.enableAdvancedStats;
 
   return (
     <div className="bg-white">
@@ -160,6 +163,20 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
                             ))}
                         </select>
                     </div>
+
+                    {/* Assist Selection (Goals Only) */}
+                    {actionModal.type === 'GOAL' && (
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Assist (Optional)</label>
+                            <select className="w-full border border-gray-300 p-3 font-bold text-sm bg-white outline-none focus:border-black" value={actionAssist} onChange={(e) => setActionAssist(e.target.value)}>
+                                <option value="">-- None / Unassisted --</option>
+                                {(actionModal.isHome ? match.homeTeamStats : match.awayTeamStats)?.map(p => (
+                                    <option key={p.name} value={p.name}>{p.name} {p.status === 'sub' ? '(Sub)' : ''}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     <button onClick={confirmAction} className={`w-full py-4 font-bold uppercase tracking-widest text-xs text-white transition-colors ${actionModal.type === 'GOAL' ? 'bg-black hover:bg-penrice-gold hover:text-black' : (actionModal.type === 'YELLOW' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-red-600 hover:bg-red-700')}`}>
                         Confirm {actionModal.type}
                     </button>
@@ -188,7 +205,7 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
         </div>
         
         {/* Possession Tracker (Advanced Stats) */}
-        {match.footballStats?.enableAdvancedStats && (
+        {showAdvanced && (
             <div className="bg-black text-white p-4 mb-6 rounded-sm">
                 <div className="flex justify-between items-center mb-3">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Possession Tracker</span>
@@ -231,14 +248,16 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
                          <button onClick={() => FootballLogic.updateStat(match, 'Corners', true, 1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">+</button>
                      </div>
                  </div>
-                 <div className="flex justify-between items-center">
-                     <span className="text-xs text-gray-500 font-bold">Fouls</span>
-                     <div className="flex items-center gap-2">
-                         <button onClick={() => FootballLogic.updateStat(match, 'Fouls', true, -1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">-</button>
-                         <span className="w-4 text-center text-xs font-bold">{match.footballStats?.homeFouls || 0}</span>
-                         <button onClick={() => FootballLogic.updateStat(match, 'Fouls', true, 1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">+</button>
+                 {showAdvanced && (
+                     <div className="flex justify-between items-center">
+                         <span className="text-xs text-gray-500 font-bold">Fouls</span>
+                         <div className="flex items-center gap-2">
+                             <button onClick={() => FootballLogic.updateStat(match, 'Fouls', true, -1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">-</button>
+                             <span className="w-4 text-center text-xs font-bold">{match.footballStats?.homeFouls || 0}</span>
+                             <button onClick={() => FootballLogic.updateStat(match, 'Fouls', true, 1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">+</button>
+                         </div>
                      </div>
-                 </div>
+                 )}
              </div>
              <div className="bg-white p-4">
                  <div className="text-center text-[10px] font-bold uppercase mb-2">Away Stats</div>
@@ -250,14 +269,16 @@ export const FootballAdmin = ({ match }: { match: Match }) => {
                          <button onClick={() => FootballLogic.updateStat(match, 'Corners', false, 1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">+</button>
                      </div>
                  </div>
-                 <div className="flex justify-between items-center">
-                     <span className="text-xs text-gray-500 font-bold">Fouls</span>
-                     <div className="flex items-center gap-2">
-                         <button onClick={() => FootballLogic.updateStat(match, 'Fouls', false, -1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">-</button>
-                         <span className="w-4 text-center text-xs font-bold">{match.footballStats?.awayFouls || 0}</span>
-                         <button onClick={() => FootballLogic.updateStat(match, 'Fouls', false, 1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">+</button>
+                 {showAdvanced && (
+                     <div className="flex justify-between items-center">
+                         <span className="text-xs text-gray-500 font-bold">Fouls</span>
+                         <div className="flex items-center gap-2">
+                             <button onClick={() => FootballLogic.updateStat(match, 'Fouls', false, -1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">-</button>
+                             <span className="w-4 text-center text-xs font-bold">{match.footballStats?.awayFouls || 0}</span>
+                             <button onClick={() => FootballLogic.updateStat(match, 'Fouls', false, 1)} className="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-xs">+</button>
+                         </div>
                      </div>
-                 </div>
+                 )}
              </div>
         </div>
 
