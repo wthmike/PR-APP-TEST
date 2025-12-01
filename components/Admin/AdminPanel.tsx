@@ -1,10 +1,12 @@
 
+
 import React, { useState } from 'react';
 import { MatchesService } from '../../services/firebase';
 import { Match, SportType } from '../../types';
 import { NetballAdmin } from './NetballAdmin';
 import { CricketAdmin } from './CricketAdmin';
 import { RugbyAdmin } from './RugbyAdmin';
+import { FootballAdmin } from './FootballAdmin';
 import { NewsAdmin } from './NewsAdmin';
 import { ConfirmDialog, Modal } from '../Shared';
 
@@ -15,7 +17,7 @@ interface AdminPanelProps {
 
 export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
   const [activeSection, setActiveSection] = useState<'sports' | 'news'>('sports');
-  const [activeSportTab, setActiveSportTab] = useState<SportType>('rugby');
+  const [activeSportTab, setActiveSportTab] = useState<SportType>('football');
   
   const [team, setTeam] = useState('Penrice Academy');
   const [opponent, setOpponent] = useState('');
@@ -70,6 +72,12 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
             baseData.period = '1st Half';
             baseData.homeTeamStats = [];
             baseData.awayTeamStats = [];
+        } else if (activeSportTab === 'football') {
+            baseData.format = 'Football';
+            baseData.period = '1st Half';
+            baseData.homeTeamStats = [];
+            baseData.awayTeamStats = [];
+            baseData.footballStats = { homeCorners:0, awayCorners:0, homeFouls:0, awayFouls:0, homeYellows:0, awayYellows:0, homeReds:0, awayReds:0 };
         } else {
             baseData.format = '4 Quarters';
             baseData.period = 'Warmup';
@@ -135,6 +143,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
           case 'cricket': return <CricketAdmin match={match} />;
           case 'netball': return <NetballAdmin match={match} />;
           case 'rugby': return <RugbyAdmin match={match} />;
+          case 'football': return <FootballAdmin match={match} />;
           default: return null;
       }
   };
@@ -209,7 +218,7 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                             {orderedMatches.map((m, idx) => (
                                 <div key={m.id} className="inline-flex flex-col w-40 bg-white border border-gray-200 shadow-sm rounded-sm p-2 shrink-0 relative">
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-sm ${m.sport==='rugby'?'bg-penrice-navy text-white':(m.sport==='cricket'?'bg-green-700 text-white':'bg-pink-600 text-white')}`}>
+                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-sm ${m.sport==='rugby'?'bg-penrice-navy text-white':(m.sport==='cricket'?'bg-green-700 text-white':(m.sport==='football' ? 'bg-black text-white' : 'bg-pink-600 text-white'))}`}>
                                             {m.sport.substr(0,1)}
                                         </span>
                                         <div className="flex gap-1">
@@ -253,8 +262,8 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
             /* If Sport Tab */
             <>
                 {/* Secondary Sport Nav */}
-                <div className="sticky top-[113px] z-40 bg-white shadow-md grid grid-cols-3 border-b border-gray-300">
-                     {(['rugby', 'netball', 'cricket'] as SportType[]).map(tab => (
+                <div className="sticky top-[113px] z-40 bg-white shadow-md grid grid-cols-4 border-b border-gray-300">
+                     {(['football', 'rugby', 'netball', 'cricket'] as SportType[]).map(tab => (
                          <button
                             key={tab}
                             onClick={() => setActiveSportTab(tab)}
@@ -264,9 +273,10 @@ export const AdminPanel = ({ matches, onClose }: AdminPanelProps) => {
                                 {tab === 'cricket' && '🏏'}
                                 {tab === 'rugby' && '🏉'}
                                 {tab === 'netball' && '🏐'}
+                                {tab === 'football' && '⚽'}
                              </span>
                              <span className={`text-[10px] font-bold uppercase tracking-widest ${activeSportTab === tab ? 'text-black' : 'text-gray-400'}`}>
-                                 {tab}
+                                 {tab.substring(0,4)}
                              </span>
                          </button>
                      ))}

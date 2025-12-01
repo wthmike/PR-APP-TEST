@@ -1,5 +1,5 @@
 
-export type SportType = 'cricket' | 'netball' | 'rugby';
+export type SportType = 'cricket' | 'netball' | 'rugby' | 'football';
 export type MatchStatus = 'UPCOMING' | 'LIVE' | 'FT' | 'RESULT';
 
 export interface GameEvent {
@@ -8,14 +8,15 @@ export interface GameEvent {
   time: string;
   desc: string;
   duckType?: 'golden' | 'regular' | null;
+  team?: 'home' | 'away';
 }
 
 export interface PlayerStats {
   name: string;
-  runs: number; // Used as 'Points' in Rugby
+  runs: number; // Used as 'Points' in Rugby/Football (Goals)
   balls: number;
   status: 'batting' | 'out' | 'waiting' | 'not out' | 'starting' | 'sub';
-  dismissal: string;
+  dismissal: string; // Used for Cards in Football (Yellow/Red)
   bowlBalls?: number;
   bowlRuns?: number;
   bowlWkts?: number;
@@ -38,8 +39,8 @@ export interface Match {
   status: MatchStatus;
   league?: string;
   yearGroup?: string;
-  time?: string; // Added optional time field
-  sortOrder?: number; // For manual ordering
+  time?: string;
+  sortOrder?: number;
   lastUpdated: number;
   events: GameEvent[];
   
@@ -50,8 +51,8 @@ export interface Match {
   // News / Report
   report?: MatchReport;
 
-  // Netball Specific
-  period?: string; // Q1, Q2, etc.
+  // Netball/Football Specific
+  period?: string; // Q1, 1st Half, etc.
   periodIdx?: number;
   
   // Cricket Specific
@@ -63,8 +64,26 @@ export interface Match {
   awayWickets?: number;
   result?: string;
   
+  // Football Specific
+  footballStats?: {
+      homeCorners: number;
+      awayCorners: number;
+      homeFouls: number;
+      awayFouls: number;
+      homeYellows: number;
+      awayYellows: number;
+      homeReds: number;
+      awayReds: number;
+      // Advanced Stats
+      enableAdvancedStats?: boolean;
+      possessionHome?: number; // ms
+      possessionAway?: number; // ms
+      possessionStatus?: 'home' | 'away' | 'neutral';
+      lastPossessionUpdate?: number; // timestamp
+  };
+
   // Cricket Detailed Logic
-  penriceStatus?: 'batting' | 'bowling'; // Relative to 'teamName'
+  penriceStatus?: 'batting' | 'bowling';
   currentOver?: number;
   currentStriker?: string;
   currentNonStriker?: string;

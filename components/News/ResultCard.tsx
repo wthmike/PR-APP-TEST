@@ -53,6 +53,7 @@ export const ResultCard = ({ match, small = false, interactive = false }: { matc
     const getIcon = () => {
         if (match.sport === 'cricket') return '🏏';
         if (match.sport === 'rugby') return '🏉';
+        if (match.sport === 'football') return '⚽';
         return '🏐';
     };
 
