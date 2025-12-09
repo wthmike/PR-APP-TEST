@@ -87,7 +87,7 @@ const StatRow = ({ label, homeVal, awayVal, theme = 'dark' }: { label: string, h
     );
 };
 
-const LineupList = ({ players, teamName, color, align = 'left' }: { players?: PlayerStats[], teamName: string, color: string, align?: 'left' | 'right' }) => {
+const LineupList = ({ players, events, teamName, color, align = 'left' }: { players?: PlayerStats[], events?: GameEvent[], teamName: string, color: string, align?: 'left' | 'right' }) => {
     const starters = players?.filter(p => p.status === 'starting') || [];
     const subs = players?.filter(p => p.status === 'sub') || [];
 
@@ -103,34 +103,75 @@ const LineupList = ({ players, teamName, color, align = 'left' }: { players?: Pl
             <div className={`flex-1 overflow-y-auto custom-scroll w-full space-y-1 ${align === 'right' ? 'pr-2' : 'pl-2'}`}>
                 {starters.length === 0 && <div className="text-gray-600 text-xs uppercase tracking-widest italic">No Lineup Available</div>}
                 
-                {starters.map((p, i) => (
-                    <div key={i} className={`py-1.5 border-b border-white/5 flex items-center gap-3 group ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <span className="font-mono text-gray-600 text-[10px] group-hover:text-penrice-gold transition-colors">{i+1}</span>
-                        <span className="text-sm font-medium text-gray-300 uppercase tracking-tight group-hover:text-white transition-colors">{p.name}</span>
-                        {p.dismissal && (
-                            <div className="flex gap-1">
-                                {p.dismissal.includes('Yellow') && <div className="w-2 h-3 bg-yellow-400 rounded-[1px]"></div>}
-                                {p.dismissal.includes('Red') && <div className="w-2 h-3 bg-red-600 rounded-[1px]"></div>}
+                {starters.map((p, i) => {
+                    const assists = events?.filter(e => e.type === 'GOAL' && e.assist === p.name).length || 0;
+                    
+                    return (
+                        <div key={i} className={`py-1.5 border-b border-white/5 flex items-center gap-3 group ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <span className="font-mono text-gray-600 text-[10px] group-hover:text-penrice-gold transition-colors">{i+1}</span>
+                            <span className="text-sm font-medium text-gray-300 uppercase tracking-tight group-hover:text-white transition-colors">{p.name}</span>
+                            
+                            <div className={`flex items-center gap-1 ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
+                                {p.dismissal && (
+                                    <div className="flex gap-1">
+                                        {p.dismissal.includes('Yellow') && <div className="w-2 h-3 bg-yellow-400 rounded-[1px]"></div>}
+                                        {p.dismissal.includes('Red') && <div className="w-2 h-3 bg-red-600 rounded-[1px]"></div>}
+                                    </div>
+                                )}
+                                {p.runs > 0 && ( // Goals
+                                    <div className="flex gap-1">
+                                        {Array.from({length: p.runs}).map((_, g) => (
+                                            <span key={g} className="text-[10px]" title="Goal">⚽</span>
+                                        ))}
+                                    </div>
+                                )}
+                                {assists > 0 && ( // Assists
+                                    <div className="flex gap-1">
+                                        {Array.from({length: assists}).map((_, a) => (
+                                            <span key={`ast-${a}`} className="flex items-center justify-center w-3.5 h-3.5 bg-gray-700 text-gray-300 text-[8px] font-bold rounded-full border border-gray-600" title="Assist">A</span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                        {p.runs > 0 && ( // Goals
-                            <div className="flex gap-1">
-                                {Array.from({length: p.runs}).map((_, g) => (
-                                    <span key={g} className="text-[10px]">⚽</span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))}
+                        </div>
+                    );
+                })}
 
                 {subs.length > 0 && (
                     <div className="mt-6">
                         <h4 className={`text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ${align === 'right' ? 'text-right' : 'text-left'}`}>Substitutes</h4>
-                        {subs.map((p, i) => (
-                            <div key={`sub-${i}`} className={`py-1 flex items-center gap-3 ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
-                                <span className="text-xs text-gray-500 uppercase tracking-tight">{p.name}</span>
-                            </div>
-                        ))}
+                        {subs.map((p, i) => {
+                             const assists = events?.filter(e => e.type === 'GOAL' && e.assist === p.name).length || 0;
+                             
+                             return (
+                                <div key={`sub-${i}`} className={`py-1 flex items-center gap-3 ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
+                                    <span className="text-xs text-gray-500 uppercase tracking-tight">{p.name}</span>
+                                    
+                                     <div className={`flex items-center gap-1 ${align === 'right' ? 'flex-row-reverse' : 'flex-row'}`}>
+                                        {p.dismissal && (
+                                            <div className="flex gap-1">
+                                                {p.dismissal.includes('Yellow') && <div className="w-2 h-3 bg-yellow-400 rounded-[1px]"></div>}
+                                                {p.dismissal.includes('Red') && <div className="w-2 h-3 bg-red-600 rounded-[1px]"></div>}
+                                            </div>
+                                        )}
+                                        {p.runs > 0 && (
+                                            <div className="flex gap-1">
+                                                {Array.from({length: p.runs}).map((_, g) => (
+                                                    <span key={g} className="text-[9px]" title="Goal">⚽</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {assists > 0 && (
+                                            <div className="flex gap-1">
+                                                {Array.from({length: assists}).map((_, a) => (
+                                                    <span key={`ast-${a}`} className="flex items-center justify-center w-3.5 h-3.5 bg-gray-700 text-gray-300 text-[8px] font-bold rounded-full border border-gray-600" title="Assist">A</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                             );
+                        })}
                     </div>
                 )}
             </div>
@@ -201,7 +242,7 @@ const FootballPresentationOverlay = ({ match, allMatches, celebration, onClose }
                 
                 {/* LEFT: Home Lineup */}
                 <div className="col-span-3 bg-black/20 border-r border-white/5 p-8 pt-10 backdrop-blur-sm">
-                    <LineupList players={match.homeTeamStats} teamName={match.teamName} color={homeColor} align="left" />
+                    <LineupList players={match.homeTeamStats} events={match.events} teamName={match.teamName} color={homeColor} align="left" />
                 </div>
 
                 {/* CENTER: Scoreboard & Stats */}
@@ -281,7 +322,7 @@ const FootballPresentationOverlay = ({ match, allMatches, celebration, onClose }
 
                 {/* RIGHT: Away Lineup */}
                 <div className="col-span-3 bg-black/20 border-l border-white/5 p-8 pt-10 backdrop-blur-sm">
-                    <LineupList players={match.awayTeamStats} teamName={match.opponent} color={awayColor} align="right" />
+                    <LineupList players={match.awayTeamStats} events={match.events} teamName={match.opponent} color={awayColor} align="right" />
                 </div>
             </div>
 
@@ -431,6 +472,9 @@ export const FootballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({
                                   (e.type === 'RED' ? 'bg-red-600 border-red-600 text-white' : 
                                   (e.type === 'YEL' ? 'bg-yellow-400 border-yellow-400 text-black' : 
                                   'bg-white border-gray-300 text-black'));
+                
+                // Clean desc to prevent double assist display for legacy data
+                const cleanDesc = e.desc ? e.desc.replace(/ \(Ast: .*\)/, '') : '';
 
                 return (
                     <div key={idx} className="flex items-center w-full mb-6 relative group">
@@ -442,7 +486,7 @@ export const FootballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({
                                 <span className={`px-1.5 py-px text-[9px] font-bold border rounded-sm ${typeColor}`}>{e.type}</span>
                             </div>
                             <div className="text-[10px] text-gray-500 leading-tight">
-                                {e.desc}
+                                {cleanDesc}
                                 {e.assist && <span className="block text-gray-400 italic">Ast: {e.assist}</span>}
                             </div>
                         </div>
@@ -460,7 +504,7 @@ export const FootballCard: React.FC<{ match: Match, allMatches?: Match[] }> = ({
                                 <span className="text-xs font-bold text-black uppercase">{e.player}</span>
                             </div>
                             <div className="text-[10px] text-gray-500 leading-tight">
-                                {e.desc}
+                                {cleanDesc}
                                 {e.assist && <span className="block text-gray-400 italic">Ast: {e.assist}</span>}
                             </div>
                         </div>

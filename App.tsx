@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { db, auth } from './services/firebase';
 import { Match } from './types';
@@ -122,7 +123,7 @@ export default function App() {
 
   const handleAppUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === 'Hippo') {
+    if (passwordInput === 'Boro98!') {
         setIsAppLocked(false);
         setShowWelcome(true);
         setPasswordInput('');

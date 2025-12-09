@@ -55,7 +55,6 @@ export const FootballLogic = {
 
         const teamName = isHome ? match.teamName : match.opponent;
         let desc = `GOAL! ${player ? player : teamName} scores!`;
-        if (assist) desc += ` (Ast: ${assist})`;
         
         await MatchesService.update(match.id, {
             [field]: currentScore + 1,
